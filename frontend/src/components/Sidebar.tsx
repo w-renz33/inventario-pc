@@ -15,7 +15,7 @@ const ITEMS = [
 
 /** Rail lateral oscuro 240px del diseño Stitch: iconos + barra de
  *  acento 3px en el item activo. */
-export function Sidebar({ appNombre = 'SysInventario PC' }: SidebarProps) {
+export function Sidebar({ appNombre = 'CiberTecnologias SAC' }: SidebarProps) {
   const { pathname } = useLocation();
   return (
     <aside className="flex w-60 shrink-0 flex-col bg-tertiary text-on-tertiary dark:bg-inverse-surface dark:text-inverse-on-surface">

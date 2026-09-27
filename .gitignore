@@ -1,0 +1,35 @@
+
+# Java / Maven
+
+backend/target/
+
+
+# Maven Wrapper
+
+
+
+# Node / React / Vite
+
+frontend/node_modules/
+frontend/dist/
+
+
+# Entorno / secretos
+
+.env
+.env.*
+!.env.example
+
+
+# IntelliJ IDEA
+
+.idea/
+*.iml
+
+
+# VS Code
+
+.vscode/
+
+
+

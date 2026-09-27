@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-surface text-on-surface font-body-md dark:bg-inverse-surface dark:text-inverse-on-surface;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}

@@ -41,6 +41,8 @@ public class ProductoDTO {
     private String sku;
     private String marca;
     private String modelo;
-    private com.sistema.inventario.common.TipoComponente tipoComponente;
-    private com.sistema.inventario.common.EstadoProducto estado;
+    private TipoComponente tipoComponente;
+    private EstadoProducto estado;
+
+    private Boolean tieneEspecificacion;
 }

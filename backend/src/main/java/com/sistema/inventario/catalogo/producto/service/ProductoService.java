@@ -1,5 +1,6 @@
 package com.sistema.inventario.catalogo.producto.service;
 
+import com.sistema.inventario.catalogo.especificacion.service.EspecificacionResolver;
 import com.sistema.inventario.common.MotivoMovimiento;
 import com.sistema.inventario.common.Pagina;
 import com.sistema.inventario.common.Paginacion;
@@ -33,14 +34,18 @@ public class ProductoService {
 
     private final SecurityUtils securityUtils;
 
+    private final EspecificacionResolver especificacionResolver;
+
     public ProductoService(ProductoDao productoDao,
                            CategoriaRepository categoriaRepository,
                            MovimientoStockDao movimientoStockDao,
-                           SecurityUtils securityUtils) {
+                           SecurityUtils securityUtils,
+                           EspecificacionResolver especificacionResolver) {
         this.productoDao = productoDao;
         this.categoriaRepository = categoriaRepository;
         this.movimientoStockDao = movimientoStockDao;
         this.securityUtils = securityUtils;
+        this.especificacionResolver = especificacionResolver;
     }
 
     public Pagina<ProductoDTO> findPaged(int page, int size, Long categoriaId) {
@@ -251,6 +256,7 @@ public class ProductoService {
         dto.setModelo(producto.getModelo());
         dto.setTipoComponente(producto.getTipoComponente());
         dto.setEstado(producto.getEstado());
+        especificacionResolver.existe(producto.getId(), producto.getTipoComponente());
 
         return dto;
     }

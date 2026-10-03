@@ -16,8 +16,6 @@ interface ProductoFormModalProps {
   readonly onCerrar: () => void;
 }
 
-/** Formulario crear/editar. categoria es texto (el back la crea si no existe);
- *  datalist sugiere las existentes para no duplicar por typo. */
 export function ProductoFormModal({
   titulo, inicial, categoriasExistentes, guardando, error, onGuardar, onCerrar,
 }: ProductoFormModalProps) {
@@ -59,6 +57,17 @@ export function ProductoFormModal({
   const set = (k: keyof typeof form) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  // Advertencia no bloqueante: si la categoria coincide con un TipoComponente
+  // conocido, el tipo elegido deberia coincidir. Si no, se avisa pero se permite.
+  const categoriaNorm = form.categoria.trim().toUpperCase().replace(/\s+/g, '_');
+  const tipoSugerido = (TIPOS_COMPONENTE as readonly string[]).includes(categoriaNorm)
+    ? (categoriaNorm as TipoComponente)
+    : null;
+  const desajuste =
+    tipoSugerido !== null &&
+    form.tipoComponente !== '' &&
+    form.tipoComponente !== tipoSugerido;
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -119,6 +128,14 @@ export function ProductoFormModal({
           ))}
         </Select>
         <Input id="pf-desc" etiqueta="Descripcion" value={form.descripcion} onChange={set('descripcion')} />
+
+        {desajuste && (
+          <p className="col-span-full rounded border border-[#fde68a] bg-[#fffbeb] px-space-sm py-space-xs text-body-sm text-[#b45309]">
+            La categoria <strong>{form.categoria}</strong> sugiere tipo <strong>{tipoSugerido}</strong>,
+            pero elegiste <strong>{form.tipoComponente}</strong>. Verifica que sea correcto.
+          </p>
+        )}
+
         {esEdicion && (
           <>
             <Input id="pf-stock" etiqueta="Stock" type="number" min="0" step="1" value={form.stock} onChange={set('stock')} />

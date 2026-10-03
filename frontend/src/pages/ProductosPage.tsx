@@ -15,6 +15,7 @@ import { mensajeError } from '../api/client';
 import type { Categoria, Producto } from '../api/types';
 import { ProductoFormModal, formError } from './ProductoFormModal';
 import { AjusteStockModal } from './AjusteStockModal';
+import { EspecificacionModal } from './EspecificacionModal';
 
 type Dialogo =
   | { tipo: 'ninguno' }
@@ -24,9 +25,6 @@ type Dialogo =
   | { tipo: 'ver'; id: number }
   | { tipo: 'categoria' };
 
-/** Screen 2 Stitch (podada): sin KPIs (sin endpoint agregado), sin buscador
- *  por texto ni filtro de estado (sin params en el back), sin Reporte.
- *  Filtro "Tipo" del diseño = filtro por categoria (categoriaId). */
 export function ProductosPage() {
   const pag = useServerPagination({ sizeInicial: 10 });
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -37,6 +35,8 @@ export function ProductosPage() {
   const [detalle, setDetalle] = useState<Producto | null>(null);
   const [catNombre, setCatNombre] = useState('');
   const [catDesc, setCatDesc] = useState('');
+  // Estado separado para el modal de especificacion (ver pregunta 2)
+  const [specProducto, setSpecProducto] = useState<Producto | null>(null);
 
   const cargarCategorias = async () => {
     try {
@@ -136,7 +136,7 @@ export function ProductosPage() {
     <div className="flex min-h-screen bg-surface dark:bg-inverse-surface">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopAppBar titulo="Gestión de Productos" subtitulo="Inventario / Catálogo" />
+        <TopAppBar titulo="Gestion de Productos" subtitulo="Inventario / Catalogo" />
 
         <main className="flex flex-col gap-space-md p-margin">
           {pag.error && <ErrorState mensaje={pag.error} onReintentar={() => void pag.recargar()} />}
@@ -175,16 +175,21 @@ export function ProductosPage() {
                   { titulo: 'Modelo' },
                   { titulo: 'Tipo', alinear: 'center', nowrap: true },
                   { titulo: 'P. Compra / Venta', alinear: 'right', nowrap: true },
-                  { titulo: 'Stock / Mín', alinear: 'right', nowrap: true },
+                  { titulo: 'Stock / Min', alinear: 'right', nowrap: true },
                   { titulo: 'Estado', alinear: 'center', nowrap: true },
-                  { titulo: 'Acción', nowrap: true },
+                  { titulo: 'Accion', nowrap: true },
                 ]}
                 filas={filas.map((p) => [
                   <span className="font-code-tabular text-[0.8125rem] text-secondary">{p.sku || '—'}</span>,
                   <span className="font-medium">{p.nombre}</span>,
                   p.marca || '—',
                   <span className="text-on-surface-variant">{p.modelo || '—'}</span>,
-                  <Badge texto={p.tipoComponente ?? '—'} tono="info" />,
+                  <span className="flex items-center justify-center gap-space-xs">
+                    <Badge texto={p.tipoComponente ?? '—'} tono="info" />
+                    {p.tipoComponente && !p.tieneEspecificacion && (
+                      <Badge texto="sin spec" tono="warning" />
+                    )}
+                  </span>,
                   <>S/ {p.precioCompra ?? 0} / <strong>S/ {p.precioVenta}</strong></>,
                   <span className={p.stockMinimo != null && p.stock <= p.stockMinimo ? 'font-medium text-error' : ''}>
                     {p.stock} / {p.stockMinimo ?? '—'}
@@ -194,6 +199,11 @@ export function ProductosPage() {
                     <button type="button" className="px-space-xs text-body-md text-secondary hover:underline" onClick={() => void abrirVer(p.id)}>Ver</button>
                     <button type="button" className="px-space-xs text-body-md text-secondary hover:underline" onClick={() => setDialogo({ tipo: 'form', producto: p })}>Editar</button>
                     <button type="button" className="px-space-xs text-body-md text-secondary hover:underline" onClick={() => setDialogo({ tipo: 'ajuste', producto: p })}>Ajustar</button>
+                    {p.tipoComponente && (
+                      <button type="button" className="px-space-xs text-body-md text-secondary hover:underline" onClick={() => setSpecProducto(p)}>
+                        {p.tieneEspecificacion ? 'Spec' : 'Completar spec'}
+                      </button>
+                    )}
                     <button type="button" className="px-space-xs text-body-md text-error hover:underline" onClick={() => setDialogo({ tipo: 'eliminar', producto: p })}>Eliminar</button>
                   </>,
                 ])}
@@ -228,6 +238,7 @@ export function ProductosPage() {
           onCerrar={cerrar}
         />
       )}
+
       {dialogo.tipo === 'ajuste' && (
         <AjusteStockModal
           producto={dialogo.producto}
@@ -237,46 +248,85 @@ export function ProductosPage() {
           onCerrar={cerrar}
         />
       )}
+
       {dialogo.tipo === 'ver' && (
         <Modal titulo="Detalle de producto" onCerrar={() => setDialogo({ tipo: 'ninguno' })}>
           {!detalle ? (
             <p className="text-body-md text-on-surface-variant">Cargando…</p>
           ) : (
-            <dl className="grid grid-cols-1 gap-space-sm text-body-md md:grid-cols-2">
-              <DetalleCampo etiqueta="Nombre" valor={detalle.nombre} />
-              <DetalleCampo etiqueta="SKU" valor={detalle.sku || '—'} />
-              <DetalleCampo etiqueta="Categoría" valor={detalle.categoria} />
-              <DetalleCampo etiqueta="Tipo" valor={detalle.tipoComponente ?? '—'} />
-              <DetalleCampo etiqueta="Marca / Modelo" valor={`${detalle.marca || '—'} / ${detalle.modelo || '—'}`} />
-              <DetalleCampo etiqueta="Código de barras" valor={detalle.codigoBarras || '—'} />
-              <DetalleCampo etiqueta="Precio compra / venta" valor={`S/ ${detalle.precioCompra ?? 0} / S/ ${detalle.precioVenta}`} />
-              <DetalleCampo etiqueta="Stock / mínimo" valor={`${detalle.stock} / ${detalle.stockMinimo ?? '—'}`} />
-              <DetalleCampo etiqueta="Estado" valor={detalle.estado ?? '—'} />
-              <DetalleCampo etiqueta="Descripción" valor={detalle.descripcion || '—'} />
-            </dl>
+            <>
+              <dl className="grid grid-cols-1 gap-space-sm text-body-md md:grid-cols-2">
+                <DetalleCampo etiqueta="Nombre" valor={detalle.nombre} />
+                <DetalleCampo etiqueta="SKU" valor={detalle.sku || '—'} />
+                <DetalleCampo etiqueta="Categoria" valor={detalle.categoria} />
+                <DetalleCampo etiqueta="Tipo" valor={detalle.tipoComponente ?? '—'} />
+                <DetalleCampo etiqueta="Marca / Modelo" valor={`${detalle.marca || '—'} / ${detalle.modelo || '—'}`} />
+                <DetalleCampo etiqueta="Codigo de barras" valor={detalle.codigoBarras || '—'} />
+                <DetalleCampo etiqueta="Precio compra / venta" valor={`S/ ${detalle.precioCompra ?? 0} / S/ ${detalle.precioVenta}`} />
+                <DetalleCampo etiqueta="Stock / minimo" valor={`${detalle.stock} / ${detalle.stockMinimo ?? '—'}`} />
+                <DetalleCampo etiqueta="Estado" valor={detalle.estado ?? '—'} />
+                <DetalleCampo etiqueta="Descripcion" valor={detalle.descripcion || '—'} />
+              </dl>
+
+              {detalle.tipoComponente && (
+                <section className="mt-space-md border-t border-outline-variant pt-space-md">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-headline-sm">Especificacion</h3>
+                    <Button
+                      variante="secondary"
+                      onClick={() => {
+                        setDialogo({ tipo: 'ninguno' });
+                        setSpecProducto(detalle);
+                      }}
+                    >
+                      {detalle.tieneEspecificacion ? 'Ver / Editar' : 'Completar'}
+                    </Button>
+                  </div>
+                  <p className="mt-space-xs text-body-sm text-on-surface-variant">
+                    {detalle.tieneEspecificacion
+                      ? 'Este producto ya tiene especificacion registrada.'
+                      : 'Este producto aun no tiene especificacion.'}
+                  </p>
+                </section>
+              )}
+            </>
           )}
         </Modal>
       )}
+
       {dialogo.tipo === 'categoria' && (
-        <Modal titulo="Nueva categoría" textoAccion="Crear" cargandoAccion={guardando} onCerrar={() => setDialogo({ tipo: 'ninguno' })} onAccion={() => void crearCategoria()}>
+        <Modal titulo="Nueva categoria" textoAccion="Crear" cargandoAccion={guardando} onCerrar={() => setDialogo({ tipo: 'ninguno' })} onAccion={() => void crearCategoria()}>
           {errorForm && <p className="mb-space-md rounded bg-error-container/50 px-space-sm py-space-xs text-body-md text-on-error-container">{errorForm}</p>}
           <div className="flex flex-col gap-space-md">
             <Input id="cat-nombre" etiqueta="Nombre *" placeholder="ej. CPU, MONITORES…" value={catNombre} onChange={(e) => setCatNombre(e.target.value)} required />
-            <Input id="cat-desc" etiqueta="Descripción" value={catDesc} onChange={(e) => setCatDesc(e.target.value)} />
+            <Input id="cat-desc" etiqueta="Descripcion" value={catDesc} onChange={(e) => setCatDesc(e.target.value)} />
           </div>
         </Modal>
       )}
+
       {dialogo.tipo === 'eliminar' && (
         <Modal titulo="Eliminar producto" textoAccion="Eliminar" cargandoAccion={guardando} onCerrar={cerrar} onAccion={() => void confirmarEliminar()}>
           <p className="text-body-md">
-            ¿Eliminar <strong>{dialogo.producto.nombre}</strong> (SKU {dialogo.producto.sku || '—'})? El backend registra un
+            Eliminar <strong>{dialogo.producto.nombre}</strong> (SKU {dialogo.producto.sku || '—'})? El backend registra un
             movimiento de SALIDA por el stock restante.
           </p>
         </Modal>
       )}
+
+      {specProducto && (
+        <EspecificacionModal
+          producto={specProducto}
+          onCerrar={() => setSpecProducto(null)}
+          onGuardado={() => {
+            setSpecProducto(null);
+            void pag.recargar();
+          }}
+        />
+      )}
     </div>
   );
 }
+
 interface DetalleCampoProps {
   readonly etiqueta: string;
   readonly valor: string;

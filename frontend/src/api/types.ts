@@ -1,5 +1,19 @@
 /** Espejo 1:1 de los DTOs del backend (com.sistema.inventario.*.dto).
  * Si el backend cambia un campo, TypeScript avisa en compilacion. */
+export type {
+  TipoEspecificacion,
+  EspecificacionCpu,
+  EspecificacionGpu,
+  EspecificacionRam,
+  EspecificacionSsd,
+  EspecificacionHdd,
+  EspecificacionPlacaMadre,
+  EspecificacionFuente,
+  EspecificacionGabinete,
+  Especificacion,
+} from './types-especificaciones';
+
+
 
 export type TipoComponente =
   | 'CPU' | 'GPU' | 'RAM' | 'SSD' | 'HDD'
@@ -49,6 +63,7 @@ export interface Producto {
   modelo: string;
   tipoComponente: TipoComponente | null;
   estado: EstadoProducto | null;
+  tieneEspecificacion: boolean;
 }
 
 export interface ProductoCreate {

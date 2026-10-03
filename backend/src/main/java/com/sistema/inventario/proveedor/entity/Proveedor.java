@@ -31,7 +31,7 @@ public class Proveedor {
     @Column(name = "contacto_nombre")
     private String contactoNombre;
 
-    @Column(name = "Contacto_telefono")
+    @Column(name = "contacto_telefono")
     private String contactoTelefono;
 
     private Boolean activo = true;

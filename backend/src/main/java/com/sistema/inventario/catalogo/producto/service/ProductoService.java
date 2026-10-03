@@ -256,7 +256,7 @@ public class ProductoService {
         dto.setModelo(producto.getModelo());
         dto.setTipoComponente(producto.getTipoComponente());
         dto.setEstado(producto.getEstado());
-        especificacionResolver.existe(producto.getId(), producto.getTipoComponente());
+        dto.setTieneEspecificacion(especificacionResolver.existe(producto.getId(), producto.getTipoComponente()));
 
         return dto;
     }

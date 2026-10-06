@@ -11,8 +11,3 @@ export const TIPOS_DOCUMENTO: TipoDocumento[] = [
 
 /** IGV peruano aplicado por el backend al registrar ingresos. */
 export const IGV_TASA = 0.18;
-
-export const DEMO_CREDENCIALES = [
-  { username: 'admin', password: 'admin123', descripcion: 'ADMIN · acceso total' },
-  { username: 'inventario', password: 'inv123', descripcion: 'INVENTARIO · productos + ingresos' },
-];

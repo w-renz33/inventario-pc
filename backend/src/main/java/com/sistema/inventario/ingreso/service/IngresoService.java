@@ -19,12 +19,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.sistema.inventario.common.EstadoIngreso;
 
 @Service
 public class IngresoService {
+
+    /** Tasa de IGV aplicada al total. El frontend usa la misma constante. */
+    private static final BigDecimal TASA_IGV = new BigDecimal("0.18");
 
     private final IngresoDao ingresoDao;
     private final ProductoDao productoDao;
@@ -69,13 +73,21 @@ public class IngresoService {
         ingreso.setFecha(dto.getFecha());
         ingreso.setProveedor(proveedor);
         ingreso.setObservacion(dto.getObservacion());
-        ingreso.setEstado(com.sistema.inventario.common.EstadoIngreso.REGISTRADO);
+        ingreso.setEstado(EstadoIngreso.REGISTRADO);
         ingreso.setUsuario(securityUtils.getCurrentUser());
 
+        if (dto.getDetalles() == null || dto.getDetalles().isEmpty()) {
+            throw new RuntimeException("El ingreso debe tener al menos un producto en el detalle");
+        }
+
         BigDecimal subtotal = BigDecimal.ZERO;
+        List<MovimientoStock> movimientosDelIngreso = new ArrayList<>();
         for (IngresoDetalleDTO d : dto.getDetalles()) {
             if (d.getCantidad() == null || d.getCantidad() <= 0) {
                 throw new RuntimeException("Cantidad debe ser > 0");
+            }
+            if (d.getPrecioUnitario() == null || d.getPrecioUnitario().signum() < 0) {
+                throw new RuntimeException("El precio unitario es obligatorio y no puede ser negativo");
             }
             Producto producto = productoDao.findById(d.getProductoId())
                     .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + d.getProductoId()));
@@ -106,24 +118,23 @@ public class IngresoService {
             // referenciaId se completa tras guardar el ingreso
             mov.setUsuario(securityUtils.getCurrentUser());
             mov.setObservacion("Ingreso " + dto.getTipoDocumento() + " " + dto.getNumeroDocumento());
-            movimientoStockDao.save(mov);
+            movimientosDelIngreso.add(mov);
         }
 
         ingreso.setSubtotal(subtotal);
-        ingreso.setIgv(subtotal.multiply(BigDecimal.valueOf(0.18)));
+        ingreso.setIgv(subtotal.multiply(TASA_IGV));
         ingreso.setTotal(subtotal.add(ingreso.getIgv()));
         ingreso = ingresoDao.save(ingreso);
 
-        // completar referenciaId de los movimientos de este ingreso
-        Long ingresoId = ingreso.getId();
-        for (IngresoDetalle detalle : ingreso.getDetalles()) {
-            movimientoStockDao.findByProductoOrderByFechaDesc(detalle.getProducto()).stream()
-                    .filter(m -> m.getReferenciaTipo() == ReferenciaTipo.INGRESO && m.getReferenciaId() == null)
-                    .findFirst()
-                    .ifPresent(m -> {
-                        m.setReferenciaId(ingresoId);
-                        movimientoStockDao.save(m);
-                    });
+            // El movimiento se guardo antes que el ingreso porque necesitaba un id
+            // que todavia no existia. Ahora se enlaza usando la referencia directa a
+        // cada entidad: antes se re-consultaba el kardex del producto y se
+        // tomaba el primer movimiento sin referencia, lo que era una consulta
+        // por linea de detalle y podia enlazar al movimiento equivocado si el
+        // mismo producto aparecia mas de una vez.
+        for (MovimientoStock mov : movimientosDelIngreso) {
+            mov.setReferenciaId(ingreso.getId());
+            movimientoStockDao.save(mov);
         }
 
         return toDTO(ingreso);
@@ -133,7 +144,7 @@ public class IngresoService {
     public void anular(Long id) {
         Ingreso ingreso = ingresoDao.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ingreso no encontrado"));
-        if (com.sistema.inventario.common.EstadoIngreso.ANULADO.equals(ingreso.getEstado())) {
+        if (EstadoIngreso.ANULADO.equals(ingreso.getEstado())) {
             return;
         }
         // guarda previa al CHECK: la reversa no puede dejar stock negativo
@@ -165,7 +176,7 @@ public class IngresoService {
             mov.setObservacion("Anulacion de ingreso #" + ingreso.getId());
             movimientoStockDao.save(mov);
         }
-        ingreso.setEstado(com.sistema.inventario.common.EstadoIngreso.ANULADO);
+        ingreso.setEstado(EstadoIngreso.ANULADO);
         ingresoDao.save(ingreso);
     }
 

@@ -33,6 +33,14 @@ public class ProductoDao {
         return Optional.ofNullable(em.find(Producto.class, id));
     }
 
+    public Optional<Producto> findBySku(String sku) {
+        return em.createQuery("SELECT p FROM Producto p WHERE p.sku = :sku", Producto.class)
+                .setParameter("sku", sku)
+                .getResultList()
+                .stream()
+                .findFirst();
+    }
+
     public List<Producto> findPage(int page, int size, Long categoriaId) {
         String jpql = "SELECT p FROM Producto p"
                 + (categoriaId != null ? " WHERE p.categoria.id = :categoriaId" : "")

@@ -5,11 +5,17 @@ import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { Pagination } from '../components/Pagination';
 import { Badge, tonoEstadoProducto } from '../components/Badge';
+import { AccionBtn } from '../components/AccionBtn';
+import { AccionMenu } from '../components/AccionMenu';
+import type { AccionMenuItem } from '../components/AccionMenu';
+import { ETIQUETAS_TIPO } from '../api/especificaciones';
+import type { TipoEspecificacion } from '../api/types';
 import { Modal } from '../components/Modal';
 import { ErrorState } from '../components/States';
 import { useServerPagination } from '../hooks/useServerPagination';
 import { listarCategorias, crearCategoria as crearCategoriaApi } from '../api/catalogos';
 import { Input } from '../components/Fields';
+import { useAuth } from '../auth/AuthContext';
 import * as api from '../api/productos';
 import { mensajeError } from '../api/client';
 import type { Categoria, Producto } from '../api/types';
@@ -26,6 +32,12 @@ type Dialogo =
   | { tipo: 'categoria' };
 
 export function ProductosPage() {
+  const { tienePermiso } = useAuth();
+  const puedeCrear = tienePermiso('producto.crear');
+  const puedeAjustar = tienePermiso('stock.ajustar');
+  const puedeBajar = tienePermiso('stock.ajustar') || tienePermiso('categoria.gestionar');
+  const puedeCrearCategoria = tienePermiso('categoria.gestionar');
+
   const pag = useServerPagination({ sizeInicial: 10 });
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [dialogo, setDialogo] = useState<Dialogo>({ tipo: 'ninguno' });
@@ -92,7 +104,7 @@ export function ProductosPage() {
     setGuardando(true);
     setErrorAccion(null);
     try {
-      await api.eliminarProducto(dialogo.producto.id);
+      await api.darDeBajaProducto(dialogo.producto.id);
       cerrar();
       await pag.recargar();
     } catch (err) {
@@ -132,6 +144,44 @@ export function ProductosPage() {
 
   const filas = pag.pagina?.content ?? [];
 
+  /**
+   * Acciones secundarias de una fila. Se muestran en el menu "⋯" para que la
+   * celda no tenga que crecer con cada nombre completo. "Ver" queda fuera del
+   * menu porque es la accion que se usa siempre.
+   */
+  const accionesFila = (p: Producto): AccionMenuItem[] => {
+    const items: AccionMenuItem[] = [];
+
+    if (p.tipoComponente) {
+      const tipo = p.tipoComponente as TipoEspecificacion;
+      items.push({
+        etiqueta: p.tieneEspecificacion ? 'Ver especificación' : 'Completar especificación',
+        title: `Especificación de ${ETIQUETAS_TIPO[tipo]}`,
+        onSelect: () => setSpecProducto(p),
+      });
+    }
+    if (puedeCrear) {
+      items.push({
+        etiqueta: 'Editar producto',
+        onSelect: () => setDialogo({ tipo: 'form', producto: p }),
+      });
+    }
+    if (puedeAjustar) {
+      items.push({
+        etiqueta: 'Ajustar stock',
+        onSelect: () => setDialogo({ tipo: 'ajuste', producto: p }),
+      });
+    }
+    if (puedeBajar) {
+      items.push({
+        etiqueta: 'Dar de baja',
+        variante: 'destructiva',
+        onSelect: () => setDialogo({ tipo: 'eliminar', producto: p }),
+      });
+    }
+    return items;
+  };
+
   return (
     <div className="flex min-h-screen bg-surface dark:bg-inverse-surface">
       <Sidebar />
@@ -158,9 +208,13 @@ export function ProductosPage() {
               </select>
             </label>
             <Button variante="secondary" onClick={() => pag.cambiarCategoria(undefined)}>Limpiar</Button>
-            <Button variante="secondary" onClick={() => { setCatNombre(''); setCatDesc(''); setErrorForm(null); setDialogo({ tipo: 'categoria' }); }}>+ Categoría</Button>
+            {puedeCrearCategoria && (
+              <Button variante="secondary" onClick={() => { setCatNombre(''); setCatDesc(''); setErrorForm(null); setDialogo({ tipo: 'categoria' }); }}>+ Categoría</Button>
+            )}
             <span className="ml-auto" />
-            <Button onClick={() => setDialogo({ tipo: 'form' })}>+ Nuevo Producto</Button>
+            {puedeCrear && (
+              <Button onClick={() => setDialogo({ tipo: 'form' })}>+ Nuevo Producto</Button>
+            )}
           </div>
 
           {pag.cargando && filas.length === 0 ? (
@@ -171,8 +225,7 @@ export function ProductosPage() {
                 columnas={[
                   { titulo: 'SKU', nowrap: true },
                   { titulo: 'Nombre' },
-                  { titulo: 'Marca' },
-                  { titulo: 'Modelo' },
+                  { titulo: 'Marca / Modelo' },
                   { titulo: 'Tipo', alinear: 'center', nowrap: true },
                   { titulo: 'P. Compra / Venta', alinear: 'right', nowrap: true },
                   { titulo: 'Stock / Min', alinear: 'right', nowrap: true },
@@ -182,12 +235,14 @@ export function ProductosPage() {
                 filas={filas.map((p) => [
                   <span className="font-code-tabular text-[0.8125rem] text-secondary">{p.sku || '—'}</span>,
                   <span className="font-medium">{p.nombre}</span>,
-                  p.marca || '—',
-                  <span className="text-on-surface-variant">{p.modelo || '—'}</span>,
+                  <span className="text-on-surface-variant">
+                    {p.marca || '—'}
+                    {p.modelo ? ` / ${p.modelo}` : ''}
+                  </span>,
                   <span className="flex items-center justify-center gap-space-xs">
                     <Badge texto={p.tipoComponente ?? '—'} tono="info" />
                     {p.tipoComponente && !p.tieneEspecificacion && (
-                      <Badge texto="sin spec" tono="warning" />
+                      <Badge texto="Sin especificación" tono="warning" />
                     )}
                   </span>,
                   <>S/ {p.precioCompra ?? 0} / <strong>S/ {p.precioVenta}</strong></>,
@@ -195,17 +250,15 @@ export function ProductosPage() {
                     {p.stock} / {p.stockMinimo ?? '—'}
                   </span>,
                   <Badge texto={p.estado ?? '—'} tono={tonoEstadoProducto(p.estado)} />,
-                  <>
-                    <button type="button" className="px-space-xs text-body-md text-secondary hover:underline" onClick={() => void abrirVer(p.id)}>Ver</button>
-                    <button type="button" className="px-space-xs text-body-md text-secondary hover:underline" onClick={() => setDialogo({ tipo: 'form', producto: p })}>Editar</button>
-                    <button type="button" className="px-space-xs text-body-md text-secondary hover:underline" onClick={() => setDialogo({ tipo: 'ajuste', producto: p })}>Ajustar</button>
-                    {p.tipoComponente && (
-                      <button type="button" className="px-space-xs text-body-md text-secondary hover:underline" onClick={() => setSpecProducto(p)}>
-                        {p.tieneEspecificacion ? 'Spec' : 'Completar spec'}
-                      </button>
-                    )}
-                    <button type="button" className="px-space-xs text-body-md text-error hover:underline" onClick={() => setDialogo({ tipo: 'eliminar', producto: p })}>Eliminar</button>
-                  </>,
+                  <span className="flex items-center gap-space-xs">
+                    <AccionBtn variante="primaria" onClick={() => void abrirVer(p.id)}>
+                      Ver
+                    </AccionBtn>
+                    <AccionMenu
+                      ariaLabel={`Acciones de ${p.nombre}`}
+                      items={accionesFila(p)}
+                    />
+                  </span>,
                 ])}
                 vacio="Sin productos para este filtro."
               />
@@ -305,10 +358,11 @@ export function ProductosPage() {
       )}
 
       {dialogo.tipo === 'eliminar' && (
-        <Modal titulo="Eliminar producto" textoAccion="Eliminar" cargandoAccion={guardando} onCerrar={cerrar} onAccion={() => void confirmarEliminar()}>
+        <Modal titulo="Dar de baja producto" textoAccion="Dar de baja" cargandoAccion={guardando} onCerrar={cerrar} onAccion={() => void confirmarEliminar()}>
           <p className="text-body-md">
-            Eliminar <strong>{dialogo.producto.nombre}</strong> (SKU {dialogo.producto.sku || '—'})? El backend registra un
-            movimiento de SALIDA por el stock restante.
+            Dar de baja <strong>{dialogo.producto.nombre}</strong> (SKU {dialogo.producto.sku || '—'})? El
+            producto pasa a estado <strong>DESCONTINUADO</strong>: deja de operar pero se conserva junto a su
+            historial de kardex. El stock restante se registra como SALIDA por MERMA.
           </p>
         </Modal>
       )}

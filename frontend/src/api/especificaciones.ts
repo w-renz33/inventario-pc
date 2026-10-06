@@ -1,15 +1,5 @@
 import { api } from './client';
-import type {
-  EspecificacionCpu,
-  EspecificacionGpu,
-  EspecificacionRam,
-  EspecificacionSsd,
-  EspecificacionHdd,
-  EspecificacionPlacaMadre,
-  EspecificacionFuente,
-  EspecificacionGabinete,
-  TipoEspecificacion,
-} from './types-especificaciones';
+import type { TipoEspecificacion } from './types-especificaciones';
 
 /** Ruta base por tipo: el backend expone un controller por tipo.
  *  El front usa este mapa para no hardcodear la URL en cada llamada. */
@@ -65,68 +55,6 @@ export async function eliminarEspecificacion(
 ): Promise<void> {
   await api.delete(base(productoId, tipo));
 }
-
-/* --------------------------------------------------------------------------
- * Envoltorios tipados por tipo. No son estrictamente necesarios (el front
- * puede usar las funciones genericas), pero dan autocompletado exacto
- * cuando se conoce el tipo en tiempo de compilacion.
- * ------------------------------------------------------------------------ */
-
-export const cpuApi = {
-  get: (id: number) => getEspecificacion<EspecificacionCpu>(id, 'CPU'),
-  crear: (id: number, dto: EspecificacionCpu) => crearEspecificacion(id, 'CPU', dto),
-  actualizar: (id: number, dto: EspecificacionCpu) => actualizarEspecificacion(id, 'CPU', dto),
-  eliminar: (id: number) => eliminarEspecificacion(id, 'CPU'),
-};
-
-export const gpuApi = {
-  get: (id: number) => getEspecificacion<EspecificacionGpu>(id, 'GPU'),
-  crear: (id: number, dto: EspecificacionGpu) => crearEspecificacion(id, 'GPU', dto),
-  actualizar: (id: number, dto: EspecificacionGpu) => actualizarEspecificacion(id, 'GPU', dto),
-  eliminar: (id: number) => eliminarEspecificacion(id, 'GPU'),
-};
-
-export const ramApi = {
-  get: (id: number) => getEspecificacion<EspecificacionRam>(id, 'RAM'),
-  crear: (id: number, dto: EspecificacionRam) => crearEspecificacion(id, 'RAM', dto),
-  actualizar: (id: number, dto: EspecificacionRam) => actualizarEspecificacion(id, 'RAM', dto),
-  eliminar: (id: number) => eliminarEspecificacion(id, 'RAM'),
-};
-
-export const ssdApi = {
-  get: (id: number) => getEspecificacion<EspecificacionSsd>(id, 'SSD'),
-  crear: (id: number, dto: EspecificacionSsd) => crearEspecificacion(id, 'SSD', dto),
-  actualizar: (id: number, dto: EspecificacionSsd) => actualizarEspecificacion(id, 'SSD', dto),
-  eliminar: (id: number) => eliminarEspecificacion(id, 'SSD'),
-};
-
-export const hddApi = {
-  get: (id: number) => getEspecificacion<EspecificacionHdd>(id, 'HDD'),
-  crear: (id: number, dto: EspecificacionHdd) => crearEspecificacion(id, 'HDD', dto),
-  actualizar: (id: number, dto: EspecificacionHdd) => actualizarEspecificacion(id, 'HDD', dto),
-  eliminar: (id: number) => eliminarEspecificacion(id, 'HDD'),
-};
-
-export const placaMadreApi = {
-  get: (id: number) => getEspecificacion<EspecificacionPlacaMadre>(id, 'PLACA_MADRE'),
-  crear: (id: number, dto: EspecificacionPlacaMadre) => crearEspecificacion(id, 'PLACA_MADRE', dto),
-  actualizar: (id: number, dto: EspecificacionPlacaMadre) => actualizarEspecificacion(id, 'PLACA_MADRE', dto),
-  eliminar: (id: number) => eliminarEspecificacion(id, 'PLACA_MADRE'),
-};
-
-export const fuenteApi = {
-  get: (id: number) => getEspecificacion<EspecificacionFuente>(id, 'FUENTE'),
-  crear: (id: number, dto: EspecificacionFuente) => crearEspecificacion(id, 'FUENTE', dto),
-  actualizar: (id: number, dto: EspecificacionFuente) => actualizarEspecificacion(id, 'FUENTE', dto),
-  eliminar: (id: number) => eliminarEspecificacion(id, 'FUENTE'),
-};
-
-export const gabineteApi = {
-  get: (id: number) => getEspecificacion<EspecificacionGabinete>(id, 'GABINETE'),
-  crear: (id: number, dto: EspecificacionGabinete) => crearEspecificacion(id, 'GABINETE', dto),
-  actualizar: (id: number, dto: EspecificacionGabinete) => actualizarEspecificacion(id, 'GABINETE', dto),
-  eliminar: (id: number) => eliminarEspecificacion(id, 'GABINETE'),
-};
 
 /** Descriptor de campos por tipo: lo usa EspecificacionForm para renderizar
  *  el formulario dinamico. Cada campo declara tipo de input y etiqueta. */

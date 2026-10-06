@@ -5,6 +5,7 @@ import com.sistema.inventario.catalogo.categoria.entity.Categoria;
 import com.sistema.inventario.catalogo.categoria.repository.CategoriaRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,6 +31,7 @@ public class CategoriaController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('categoria.gestionar')")
     public ResponseEntity<CategoriaDTO> create(@Valid @RequestBody CategoriaDTO dto) {
         Categoria categoria = new Categoria();
         categoria.setNombre(dto.getNombre());

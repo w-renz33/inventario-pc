@@ -2,7 +2,6 @@ package com.sistema.inventario.auth.service;
 
 import com.sistema.inventario.auth.dto.LoginRequest;
 import com.sistema.inventario.auth.dto.LoginResponse;
-import com.sistema.inventario.auth.entity.RolPermiso;
 import com.sistema.inventario.auth.entity.Usuario;
 import com.sistema.inventario.auth.entity.UsuarioRol;
 import com.sistema.inventario.auth.repository.AuthDao;

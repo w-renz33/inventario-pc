@@ -1,13 +1,5 @@
 import { Button } from './Button';
 
-interface EmptyStateProps {
-  readonly mensaje: string;
-}
-
-export function EmptyState({ mensaje }: EmptyStateProps) {
-  return <p className="py-space-xl text-center text-body-md text-on-surface-variant">{mensaje}</p>;
-}
-
 interface ErrorStateProps {
   readonly mensaje: string;
   readonly onReintentar?: () => void;

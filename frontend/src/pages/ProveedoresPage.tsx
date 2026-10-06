@@ -6,6 +6,7 @@ import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { Pagination } from '../components/Pagination';
 import { Badge } from '../components/Badge';
+import { AccionBtn } from '../components/AccionBtn';
 import { Modal } from '../components/Modal';
 import { Input } from '../components/Fields';
 import { ErrorState } from '../components/States';
@@ -148,11 +149,17 @@ export function ProveedoresPage() {
                   p.email || '—',
                   p.contactoNombre || '—',
                   <Badge texto={p.activo ? 'ACTIVO' : 'INACTIVO'} tono={p.activo ? 'success' : 'neutral'} />,
-                  <>
-                    <button type="button" className="px-space-xs text-body-md text-secondary hover:underline" onClick={() => void abrirVer(p.id!)}>Ver</button>
-                    <button type="button" className="px-space-xs text-body-md text-secondary hover:underline" onClick={() => { setErrorForm(null); setDialogo({ tipo: 'form', proveedor: p }); }}>Editar</button>
-                    <button type="button" className="px-space-xs text-body-md text-error hover:underline" onClick={() => setDialogo({ tipo: 'eliminar', proveedor: p })}>Eliminar</button>
-                  </>,
+                  <span className="flex items-center gap-space-xs">
+                    <AccionBtn variante="primaria" onClick={() => void abrirVer(p.id!)}>
+                      Ver
+                    </AccionBtn>
+                    <AccionBtn variante="neutra" onClick={() => { setErrorForm(null); setDialogo({ tipo: 'form', proveedor: p }); }}>
+                      Editar
+                    </AccionBtn>
+                    <AccionBtn variante="destructiva" onClick={() => setDialogo({ tipo: 'eliminar', proveedor: p })}>
+                      Eliminar
+                    </AccionBtn>
+                  </span>,
                 ])}
                 vacio="Sin proveedores."
               />

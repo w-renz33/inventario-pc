@@ -6,6 +6,7 @@ import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { Pagination } from '../components/Pagination';
 import { Badge, tonoEstadoIngreso } from '../components/Badge';
+import { AccionBtn } from '../components/AccionBtn';
 import { Modal } from '../components/Modal';
 import { Input, Select } from '../components/Fields';
 import { ErrorState } from '../components/States';
@@ -148,12 +149,15 @@ export function IngresosPage() {
   const confirmarAnular = async () => {
     if (anularId === null) return;
     setGuardando(true);
+    setErrorForm(null);
     try {
       await api.anularIngreso(anularId);
       setAnularId(null);
       await cargar();
     } catch (err) {
-      setError(mensajeError(err, 'No se pudo anular el ingreso.'));
+      // Se muestra en el modal de confirmacion: el error es de esa accion, no
+      // del listado, asi que un banner de pagina lo pasaria por alto.
+      setErrorForm(mensajeError(err, 'No se pudo anular el ingreso.'));
     } finally {
       setGuardando(false);
     }
@@ -246,7 +250,9 @@ export function IngresosPage() {
                     <input type="number" min="1" step="1" required className="h-8 w-24 rounded border border-outline-variant px-space-xs" value={f.cantidad} onChange={(e) => setFila(idx, { cantidad: e.target.value })} />,
                     <input type="number" min="0" step="0.01" required className="h-8 w-28 rounded border border-outline-variant px-space-xs" value={f.precioUnitario} onChange={(e) => setFila(idx, { precioUnitario: e.target.value })} />,
                     <>S/ {(Number(f.cantidad || 0) * Number(f.precioUnitario || 0)).toFixed(2)}</>,
-                    <button type="button" className="text-body-md text-error hover:underline" onClick={() => setFilas((fs) => fs.filter((_, i) => i !== idx))}>Quitar</button>,
+                    <AccionBtn variante="destructiva" onClick={() => setFilas((fs) => fs.filter((_, i) => i !== idx))}>
+                      Quitar
+                    </AccionBtn>,
                   ])}
                 />
                 <div className="ml-auto mt-space-sm w-full max-w-80 text-body-md tabular">
@@ -268,16 +274,27 @@ export function IngresosPage() {
               <h2 className="text-headline-sm">Historial de ingresos registrados</h2>
               <span className="ml-auto flex flex-wrap gap-space-sm">
                 <input
+                  aria-label="Buscar ingreso por numero de documento o proveedor"
                   placeholder="Buscar por N° doc o proveedor…"
                   value={fTexto}
                   onChange={(e) => setFTexto(e.target.value)}
-                  className="h-8 rounded border border-outline-variant px-space-sm text-body-md"
+                  className="h-8 rounded border border-outline-variant px-space-sm text-body-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
                 />
-                <select value={fTipo} onChange={(e) => setFTipo(e.target.value)} className="h-8 rounded border border-outline-variant px-space-xs text-body-md">
+                <select
+                  aria-label="Filtrar por tipo de documento"
+                  value={fTipo}
+                  onChange={(e) => setFTipo(e.target.value)}
+                  className="h-8 rounded border border-outline-variant px-space-xs text-body-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
+                >
                   <option value="">Todos los tipos</option>
                   {TIPOS_DOCUMENTO.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
-                <select value={fEstado} onChange={(e) => setFEstado(e.target.value)} className="h-8 rounded border border-outline-variant px-space-xs text-body-md">
+                <select
+                  aria-label="Filtrar por estado del ingreso"
+                  value={fEstado}
+                  onChange={(e) => setFEstado(e.target.value)}
+                  className="h-8 rounded border border-outline-variant px-space-xs text-body-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
+                >
                   <option value="">Todos los estados</option>
                   <option value="REGISTRADO">REGISTRADO</option>
                   <option value="ANULADO">ANULADO</option>
@@ -305,12 +322,16 @@ export function IngresosPage() {
                     i.fecha,
                     <>S/ {i.total ?? 0}</>,
                     <Badge texto={i.estado ?? '—'} tono={tonoEstadoIngreso(i.estado)} />,
-                    <>
-                      <button type="button" className="px-space-xs text-body-md text-secondary hover:underline" onClick={() => void abrirVer(i.id)}>Ver</button>
+                    <span className="flex items-center gap-space-xs">
+                      <AccionBtn variante="primaria" onClick={() => void abrirVer(i.id)}>
+                        Ver
+                      </AccionBtn>
                       {i.estado === 'REGISTRADO' && (
-                        <button type="button" className="px-space-xs text-body-md text-error hover:underline" onClick={() => setAnularId(i.id ?? null)}>Anular</button>
+                        <AccionBtn variante="destructiva" onClick={() => setAnularId(i.id ?? null)}>
+                          Anular
+                        </AccionBtn>
                       )}
-                    </>,
+                    </span>,
                   ])}
                   vacio="Sin ingresos para este filtro."
                 />
@@ -362,7 +383,8 @@ export function IngresosPage() {
       )}
 
       {anularId !== null && (
-        <Modal titulo="Anular ingreso" textoAccion="Anular ingreso" cargandoAccion={guardando} onCerrar={() => setAnularId(null)} onAccion={() => void confirmarAnular()}>
+        <Modal titulo="Anular ingreso" textoAccion="Anular ingreso" cargandoAccion={guardando} onCerrar={() => { setAnularId(null); setErrorForm(null); }} onAccion={() => void confirmarAnular()}>
+          {errorForm && <p className="mb-space-md rounded bg-error-container/50 px-space-sm py-space-xs text-body-md text-on-error-container">{errorForm}</p>}
           <p className="text-body-md">El ingreso se marca ANULADO y revierte el stock. Esta acción no se puede deshacer.</p>
         </Modal>
       )}

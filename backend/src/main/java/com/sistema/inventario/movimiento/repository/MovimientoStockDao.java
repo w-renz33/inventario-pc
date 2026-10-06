@@ -6,7 +6,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -50,15 +49,4 @@ public class MovimientoStockDao {
                 .getResultList();
     }
 
-    public List<MovimientoStock> findByFechaBetween(LocalDateTime inicio, LocalDateTime fin) {
-        return em.createQuery(
-                        "SELECT m FROM MovimientoStock m " +
-                                "LEFT JOIN FETCH m.producto " +
-                                "WHERE m.fecha BETWEEN :inicio AND :fin " +
-                                "ORDER BY m.fecha DESC",
-                        MovimientoStock.class)
-                .setParameter("inicio", inicio)
-                .setParameter("fin", fin)
-                .getResultList();
-    }
 }

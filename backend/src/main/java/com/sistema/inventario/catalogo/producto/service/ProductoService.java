@@ -1,6 +1,7 @@
 package com.sistema.inventario.catalogo.producto.service;
 
 import com.sistema.inventario.catalogo.especificacion.service.EspecificacionResolver;
+import com.sistema.inventario.common.EstadoProducto;
 import com.sistema.inventario.common.MotivoMovimiento;
 import com.sistema.inventario.common.Pagina;
 import com.sistema.inventario.common.Paginacion;
@@ -83,11 +84,14 @@ public class ProductoService {
         }
 
         validarTipoComponente(producto);
+        // sku es NOT NULL + UNIQUE en la tabla: si el cliente no lo manda,
+        // se genera uno para que la alta no reviente con un 500.
+        producto.setSku(resolverSku(dto.getSku(), producto));
         producto = productoDao.save(producto);
 
         // registrar movimiento inicial de stock (solo si stock > 0)
         if (producto.getStock() != null && producto.getStock() > 0) {
-            registrarMovimiento(producto, producto.getStock(), TipoMovimiento.ENTRADA,
+            registrarMovimiento(producto, producto.getStock(), TipoMovimiento.ENTRADA, null,
                     MotivoMovimiento.INVENTARIO_INICIAL,
                     ReferenciaTipo.AJUSTE, null,
                     "Stock inicial al crear producto");
@@ -142,9 +146,6 @@ public class ProductoService {
         if (dto.getPrecioCompra() != null) {
             producto.setPrecioCompra(dto.getPrecioCompra());
         }
-        if (dto.getPrecioVenta() != null) {
-            producto.setPrecioVenta(dto.getPrecioVenta());
-        }
 
         //manejar categoria
         if (dto.getCategoria() != null && !dto.getCategoria().isEmpty()) {
@@ -162,27 +163,41 @@ public class ProductoService {
         //registrar movimiento si cambió el stock (ajuste manual: tipo AJUSTE coherente con el CHECK)
         if (stockAnterior != producto.getStock()) {
             int diferencia = Math.abs(producto.getStock() - stockAnterior);
-            registrarMovimiento(producto, diferencia, TipoMovimiento.AJUSTE, MotivoMovimiento.AJUSTE_INVENTARIO,
-                    ReferenciaTipo.AJUSTE, null,
-                    String.format("Stock actualizado de %d a %d,", stockAnterior, producto.getStock()));
+            registrarMovimiento(producto, diferencia, TipoMovimiento.AJUSTE, stockAnterior,
+                    MotivoMovimiento.AJUSTE_INVENTARIO, ReferenciaTipo.AJUSTE, null,
+                    String.format("Stock actualizado de %d a %d", stockAnterior, producto.getStock()));
         }
 
         return converToDTO(producto);
 
     }
 
+    /**
+     * Baja logica: marca el producto como DESCONTINUADO en vez de borrarlo de la
+     * tabla. Es lo que permite conservar su kardex, porque movimientos_stock e
+     * ingreso_detalle lo referencian con FK restrictiva: un DELETE fisico fallaba
+     * en cuanto el producto tenia un solo movimiento o un ingreso asociado.
+     *
+     * <p>El stock restante sale como MERMA para que el kardex cuadre.
+     */
     @Transactional
     public void delete(Long id)  {
         Producto producto = productoDao.findById(id)
                         .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
+        if (EstadoProducto.DESCONTINUADO.equals(producto.getEstado())) {
+            return;
+        }
+
         //registrar movimiento de eliminacion (stock a 0)
         if (producto.getStock() != null && producto.getStock() > 0) {
-            registrarMovimiento(producto, producto.getStock(), TipoMovimiento.SALIDA, MotivoMovimiento.MERMA,
-                    ReferenciaTipo.AJUSTE, null,
-                    "Producto eliminado del sistema");
+            registrarMovimiento(producto, producto.getStock(), TipoMovimiento.SALIDA, null,
+                    MotivoMovimiento.MERMA, ReferenciaTipo.AJUSTE, null,
+                    "Producto dado de baja (DESCONTINUADO)");
         }
-        productoDao.deleteById(id);
+
+        producto.setEstado(EstadoProducto.DESCONTINUADO);
+        productoDao.save(producto);
     }
 
     @Transactional
@@ -204,23 +219,44 @@ public class ProductoService {
         producto.setStock(stockNuevo);
         producto = productoDao.save(producto);
 
+        // El motivo lo escribe el usuario en el modal; antes se recibia y se
+        // descartaba, dejando todos los ajustes con la misma observacion.
+        String nota = (motivo == null || motivo.isBlank())
+                ? String.format("Ajuste manual: %s%d", cantidad > 0 ? "+" : "", cantidad)
+                : String.format("Ajuste manual: %s%d — %s", cantidad > 0 ? "+" : "", cantidad, motivo.trim());
+
         registrarMovimiento(
                 producto,
                 Math.abs(cantidad),
                 TipoMovimiento.AJUSTE,
+                stockAnterior,
                 MotivoMovimiento.AJUSTE_INVENTARIO,
                 ReferenciaTipo.AJUSTE, null,
-                String.format("Ajustar manual: %s%d", cantidad > 0 ? "+" : "", cantidad));
+                nota);
 
         return converToDTO(producto);
     }
 
-    private void registrarMovimiento(Producto producto, int cantidad, TipoMovimiento tipo, MotivoMovimiento motivo, ReferenciaTipo referenciaTipo, Long referenciaId, String nota) {
+    /**
+     * Registra un movimiento de stock.
+     *
+     * <p>stockAnterior se calcula a partir del stock actual segun el tipo, salvo
+     * en AJUSTE, donde el valor real se recibe como parametro: antes se guardaba
+     * stockAnterior = stockNuevo, y el kardex mostraba "3 -> 3" en un ajuste que
+     * en realidad fue de 3 a 5.
+     *
+     * @param stockAnteriorKnown valor real previo al ajuste; ignorado si es null
+     */
+    private void registrarMovimiento(Producto producto, int cantidad, TipoMovimiento tipo,
+                                     Integer stockAnteriorKnown, MotivoMovimiento motivo,
+                                     ReferenciaTipo referenciaTipo, Long referenciaId, String nota) {
         MovimientoStock movimiento = new MovimientoStock();
         movimiento.setProducto(producto);
         movimiento.setCantidad(Math.abs(cantidad));
         int stockNuevo = producto.getStock() == null ? 0 : producto.getStock();
-        if (tipo == TipoMovimiento.ENTRADA) {
+        if (stockAnteriorKnown != null) {
+            movimiento.setStockAnterior(stockAnteriorKnown);
+        } else if (tipo == TipoMovimiento.ENTRADA) {
             movimiento.setStockAnterior(stockNuevo - Math.abs(cantidad));
         } else if (tipo == TipoMovimiento.SALIDA) {
             movimiento.setStockAnterior(stockNuevo + Math.abs(cantidad));
@@ -278,6 +314,39 @@ public class ProductoService {
         return dto;
     }
 
+    /**
+     * Devuelve el sku a usar: el que envio el cliente o, si vino vacio, uno
+     * generado. La columna es NOT NULL y UNIQUE, asi que un sku ausente
+     * provocaba un error de integridad al guardar.
+     *
+     * <p>El generado sigue el patron de los ya sembrados (CPU-I3-12100F,
+     * RAM-DDR4-16G): prefijo del tipo de componente, guion y los caracteres
+     * alfanumericos del nombre en mayusculas, con un sufijo numerico si dos
+     * nombres coinciden.
+     */
+    private String resolverSku(String skuSolicitado, Producto producto) {
+        if (skuSolicitado != null && !skuSolicitado.isBlank()) {
+            return skuSolicitado.trim();
+        }
+        String prefijo = producto.getTipoComponente() != null
+                ? producto.getTipoComponente().name().replace("_", "-")
+                : "GEN";
+        String base = prefijo + "-" + producto.getNombre().replaceAll("[^A-Za-z0-9]", "").toUpperCase();
+        String candidato = base.length() > 45 ? base.substring(0, 45) : base;
+
+        String sku = candidato;
+        int sufijo = 1;
+        while (skuYaExiste(sku)) {
+            sufijo++;
+            sku = candidato + "-" + sufijo;
+        }
+        return sku;
+    }
+
+    private boolean skuYaExiste(String sku) {
+        return productoDao.findBySku(sku).isPresent();
+    }
+
     private Producto converCreateToEntity(ProductCreateDTO dto) {
         Producto producto = new Producto();
         producto.setNombre(dto.getNombre());
@@ -294,16 +363,16 @@ public class ProductoService {
     }
 
     /**
-     * Regla Opcion A: segun tipoComponente corresponde una unica spec 1-1.
-     * Las specs se gestionan en sus repositorios; aqui solo se valida el discriminador.
+     * El tipo de componente decide que especificacion 1-1 corresponde (Regla
+     * Opcion A). Las specs se gestionan en sus propios repositorios; aqui solo
+     * se valida el discriminador.
+     *
+     * <p>No lleva switch: TipoComponente enumera exactamente los 8 tipos con
+     * spec, y todos son validos. El default anterior era codigo muerto.
      */
-    public void validarTipoComponente(Producto producto) {
-        if (producto.getTipoComponente() == null) {
-            return;
-        }
-        switch (producto.getTipoComponente()) {
-            case CPU, GPU, RAM, SSD, HDD, PLACA_MADRE, FUENTE, GABINETE -> { /* spec correspondiente */ }
-            default -> throw new RuntimeException("Tipo de componente no soportado");
-        }
+    private void validarTipoComponente(Producto producto) {
+        // Sin tipo no hay spec que completar; el producto queda como categoria
+        // libre. Si en el futuro aparece un tipo sin spec, este es el punto
+        // donde corresponde rechazar la operacion.
     }
 }

@@ -45,9 +45,12 @@ public class SecurityConfig {
                                 "/v3/api-docs",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html").permitAll()
-                        // ejemplos de permisos configurables (recurso.accion)
+                        // Puerta exterior por modulo: los 3 roles entran al catalogo.
+                        // El permiso fino de cada accion vive en @PreAuthorize
+                        // (ProductoController / CategoriaController / IngresoController).
                         .requestMatchers("/api/ingresos/**").hasAuthority("ingreso.registrar")
-                        .requestMatchers("/api/inventario/**").hasAnyRole("INVENTARIO", "ADMIN")
+                        .requestMatchers("/api/inventario/**")
+                            .hasAnyRole("ADMIN", "JEFE_ALMACEN", "AUXILIAR_ALMACEN")
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form.disable())

@@ -36,7 +36,9 @@ export async function actualizarProducto(id: number, dto: Partial<Producto>): Pr
   return data;
 }
 
-export async function eliminarProducto(id: number): Promise<void> {
+/** Baja logica: el backend marca el producto como DESCONTINUADO y conserva su
+ *  historial. No borra la fila. */
+export async function darDeBajaProducto(id: number): Promise<void> {
   await api.delete(`/api/inventario/productos/${id}`);
 }
 

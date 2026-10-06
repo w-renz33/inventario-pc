@@ -110,10 +110,15 @@ pnpm run dev
 
 ## 5. Entrar al sistema
 
-| Usuario | Clave | Puede hacer |
-|---|---|---|
-| `admin` | `admin123` | Todo |
-| `inventario` | `inv123` | Productos e ingresos |
+| Usuario | Clave | Rol | Puede hacer |
+|---|---|---|---|
+| `admin` | `admin123` | `ADMIN` | Todo, incluido ver usuarios |
+| `jefe` | `jefe123` | `JEFE_ALMACEN` | Catálogo, ingresos, ajuste de stock, categorías |
+| `inventario` | `inv123` | `AUXILIAR_ALMACEN` | Ver productos y registrar ingresos |
+
+Los tres usuarios y sus roles los crea `DataSeeder` en cada arranque.
+Es idempotente: no duplica nada y no pisa los datos ya sembrados. Las
+categorías no se siembran, se crean desde la pantalla de Productos.
 
 ## 6. Comprueba que todo funciona (2 minutos)
 
@@ -122,7 +127,9 @@ pnpm run dev
 3. Crea un producto de prueba (+ Nuevo Producto).
 4. Ve a **Ingresos** → registra un ingreso con ese producto y guárdalo.
 5. Ve a **Kardex** → elige ese producto: debe aparecer el movimiento de ENTRADA.
-6. Pulsa **Salir** → vuelves al login.
+6. Repite el paso 3 pero entrando con `inventario` / `inv123`: el botón
+   **+ Nuevo Producto** no debe aparecer (ese rol solo registra ingresos).
+7. Pulsa **Salir** → vuelves al login.
 
 ## 7. Apagar
 
@@ -146,3 +153,65 @@ Pulsa `Ctrl + C` en cada una de las dos terminales.
 - El login funciona con sesiones del servidor; no hay que copiar ningún token.
 - Los errores de negocio (stock insuficiente, documento duplicado, etc.) aparecen
   como mensajes en pantalla: léelos, dicen la causa.
+- Documentación interactiva de la API (Swagger UI): http://localhost:8080/swagger-ui.html
+- Dar de baja un producto no lo borra: pasa a estado `DESCONTINUADO` y sigue
+  visible en el catálogo con su historial de kardex intacto. Es a propósito, para
+  no romper la trazabilidad de los ingresos y movimientos que lo referencian.
+
+## 10. Pantallas del sistema
+
+Referencia de qué contiene cada pantalla y qué puede hacer el usuario en ella.
+Los permisos son los mismos que devuelve `/api/auth/me` (campo `permisos`).
+
+### Panel general (`/dashboard`)
+
+| Aspecto | Detalle |
+|---|---|
+| Elementos | 4 tarjetas KPI (valorizado, stock crítico, ingresos registrados, movimientos 30 días), tabla de últimos ingresos, tabla de stock crítico |
+| Interacciones | enlaces de navegación a Productos, Ingresos y Kardex |
+| Visible para | los 3 roles |
+| Origen de datos | los mismos endpoints de catálogo, ingresos y kardex; los agregados se calculan en el navegador |
+
+### Productos (`/productos`)
+
+| Aspecto | Detalle |
+|---|---|
+| Elementos | tabla de 8 columnas, filtro por categoría, selector de filas por página, 5 modales (alta/edición, ajuste de stock, detalle, baja, categoría) |
+| Interacciones | ver detalle, editar, ajustar stock, registrar o completar especificación, dar de baja, crear categoría |
+| `ADMIN` | todo lo anterior |
+| `JEFE_ALMACEN` | todo lo anterior |
+| `AUXILIAR_ALMACEN` | solo ver detalle y consultar especificación; sin alta, edición, ajuste ni baja |
+
+### Ingresos (`/ingresos`)
+
+| Aspecto | Detalle |
+|---|---|
+| Elementos | formulario de 2 pasos (cabecera del documento, detalle de productos), historial con 3 filtros (texto, tipo, estado), modal de anulación |
+| Interacciones | registrar ingreso, ver detalle, anular ingreso |
+| Visible para | los 3 roles; el botón de registrar requiere `ingreso.registrar` |
+
+La anulación es la única acción destructiva y revierte el stock. Si no hay stock
+suficiente para revertir, el backend la rechaza con el detalle del faltante.
+
+### Kardex (`/kardex`)
+
+| Aspecto | Detalle |
+|---|---|
+| Elementos | selector de alcance (por producto / todos), filtros de tipo y rango de fechas, 4 tarjetas de resumen, tabla de movimientos |
+| Interacciones | consultar movimientos de un producto o de todo el catálogo |
+| Visible para | los 3 roles |
+
+### Proveedores (`/proveedores`)
+
+| Aspecto | Detalle |
+|---|---|
+| Elementos | tabla de 7 columnas, filtro de texto, 3 modales (alta/edición, detalle, baja) |
+| Interacciones | ver detalle, editar, eliminar |
+| Visible para | los 3 roles |
+
+### Especificaciones
+
+No es una pantalla propia: es un modal que se abre desde la fila del producto.
+Muestra los campos del tipo correspondiente (socket, núcleos, VRAM, capacidad…)
+en solo lectura o en edición. Un producto solo admite un tipo de componente y
+una sola especificación de ese tipo.

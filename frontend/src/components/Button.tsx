@@ -14,11 +14,13 @@ const ESTILOS: Record<Variante, string> = {
 };
 
 /** Boton 32px del design system (primario #1e40af). */
-export function Button({ variante = 'primary', className = '', ...rest }: ButtonProps) {
+export function Button({ variante = 'primary', className = '', type, ...rest }: ButtonProps) {
   return (
     <button
-      type="button"
-      className={`h-8 rounded px-space-md text-body-md font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${ESTILOS[variante]} ${className}`}
+      // type por defecto "button": un <button> sin type dentro de un <form>
+      // se vuelve submit y cerraria el formulario al pulsarlo.
+      type={type ?? 'button'}
+      className={`h-8 rounded px-space-md text-body-md font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 ${ESTILOS[variante]} ${className}`}
       {...rest}
     />
   );

@@ -9,6 +9,7 @@ import com.sistema.inventario.common.Pagina;
 import com.sistema.inventario.common.Paginacion;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -45,18 +46,26 @@ public class ProductoController {
     }
 
     @PostMapping("/productos")
+    @PreAuthorize("hasAuthority('producto.crear')")
     public ResponseEntity<ProductResponseDTO> create(@Valid @RequestBody ProductCreateDTO producto) {
 
         return ResponseEntity.ok(productoService.save(producto));
     }
 
     @PatchMapping("/productos/{id}")
+    @PreAuthorize("hasAuthority('producto.crear')")
     public ResponseEntity<ProductoDTO> update(@PathVariable Long id, @Valid @RequestBody ProductoUpdateDTO producto) {
 
         return ResponseEntity.ok(productoService.update(id, producto));
     }
 
+    /**
+     * Baja logica: el producto pasa a DESCONTINUADO en vez de desaparecer de la
+     * tabla. Es lo que permite conservar su historial de kardex, porque
+     * movimientos_stock e ingreso_detalle lo referencian con FK restrictiva.
+     */
     @DeleteMapping("/productos/{id}")
+    @PreAuthorize("hasAnyAuthority('stock.ajustar', 'categoria.gestionar')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         productoService.delete(id);
 
@@ -64,6 +73,7 @@ public class ProductoController {
     }
 
     @PatchMapping("/productos/{id}/stock")
+    @PreAuthorize("hasAuthority('stock.ajustar')")
     public ResponseEntity<ProductoDTO> ajustarStock(
             @PathVariable Long id,
             @RequestParam int cantidad,

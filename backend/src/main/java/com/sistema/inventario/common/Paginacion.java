@@ -11,7 +11,6 @@ import org.springframework.web.server.ResponseStatusException;
 public final class Paginacion {
 
     public static final int PAGE_DEFAULT = 0;
-    public static final int SIZE_DEFAULT = 10;
     public static final int SIZE_MIN = 1;
     public static final int SIZE_MAX = 100;
 
@@ -24,14 +23,6 @@ public final class Paginacion {
 
     public static int sanearTamano(int size) {
         return Math.min(Math.max(size, SIZE_MIN), SIZE_MAX);
-    }
-
-    public static int offset(int page, int size) {
-        return page * size;
-    }
-
-    public static int totalPaginas(long totalElements, int size) {
-        return size > 0 ? (int) Math.ceil((double) totalElements / size) : 0;
     }
 
     /**

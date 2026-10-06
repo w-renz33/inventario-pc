@@ -1,16 +1,17 @@
 package com.sistema.inventario.catalogo.producto.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import com.sistema.inventario.common.EstadoProducto;
 import com.sistema.inventario.common.TipoComponente;
 
+/**
+ * Actualizacion parcial (PATCH): todos los campos son opcionales y solo se
+ * aplican los que llegan. Por eso no lleva anotaciones de validacion de campo
+ * (un null significa "no tocar"); la validacion vive en ProductoService.
+ */
 @Data
 public class ProductoUpdateDTO {
 

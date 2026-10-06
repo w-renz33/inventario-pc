@@ -3,7 +3,6 @@ import type { FormEvent } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { mensajeError } from '../api/client';
-import { DEMO_CREDENCIALES } from '../data/mockData';
 import { Button } from '../components/Button';
 import { Input } from '../components/Fields';
 
@@ -83,14 +82,6 @@ export function LoginPage({ appNombre = 'CiberTecnologias SAC' }: LoginPageProps
               </Button>
             </form>
 
-            <div className="mt-space-md rounded bg-surface-container-low px-space-md py-space-sm text-body-sm text-on-surface-variant">
-              <p className="font-medium">Cuentas demo:</p>
-              {DEMO_CREDENCIALES.map((c) => (
-                <p key={c.username} className="tabular">
-                  {c.username} / {c.password} — {c.descripcion}
-                </p>
-              ))}
-            </div>
           </div>
         </div>
         <p className="mt-space-sm text-center text-body-sm text-on-surface-variant">

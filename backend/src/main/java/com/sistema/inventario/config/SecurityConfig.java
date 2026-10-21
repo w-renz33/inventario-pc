@@ -14,10 +14,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-/**
- * Seguridad por sesiones (Variante C academica).
- * Sin JWT: login crea HttpSession + JSESSIONID, logout la invalida.
- */
+// Seguridad basada en sesión HTTP: el login crea la sesión y el logout la invalida.
+// No se usan tokens JWT.
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
@@ -26,10 +24,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // El front vive en otro origen (http://localhost:5173): Security debe
-                // consultar las reglas CORS en vez de bloquear el preflight OPTIONS.
+                // El frontend se sirve desde otro origen (http://localhost:5173);
+                // Spring Security debe aplicar CORS y permitir el preflight OPTIONS.
                 .cors(Customizer.withDefaults())
-                .csrf(csrf -> csrf.disable()) // academico: front separado / Postman
+                .csrf(csrf -> csrf.disable()) // API consumida desde otro origen y por clientes HTTP.
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionFixation().migrateSession()
@@ -37,7 +35,7 @@ public class SecurityConfig {
                         .maxSessionsPreventsLogin(false)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // El preflight nunca exige autenticacion: solo anuncia el permiso.
+                        // El preflight no exige autenticación; solo anuncia el permiso.
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/login",
                                 "/api/auth/logout",
@@ -45,9 +43,8 @@ public class SecurityConfig {
                                 "/v3/api-docs",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html").permitAll()
-                        // Puerta exterior por modulo: los 3 roles entran al catalogo.
-                        // El permiso fino de cada accion vive en @PreAuthorize
-                        // (ProductoController / CategoriaController / IngresoController).
+                        // Acceso por módulo: los tres roles entran al catálogo.
+                        // El permiso fino de cada acción se valida con @PreAuthorize.
                         .requestMatchers("/api/ingresos/**").hasAuthority("ingreso.registrar")
                         .requestMatchers("/api/inventario/**")
                             .hasAnyRole("ADMIN", "JEFE_ALMACEN", "AUXILIAR_ALMACEN")

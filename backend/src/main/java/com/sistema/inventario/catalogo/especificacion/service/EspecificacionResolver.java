@@ -5,11 +5,8 @@ import com.sistema.inventario.common.TipoComponente;
 
 import org.springframework.stereotype.Component;
 
-/*
- * Unico punto donde se acoplan los 8 tipos de especificacion.
- * Permite responder "existe spec para este producto?" sin ensuciar
- * ProductoService con 8 repositorios.
- */
+// Concentra el acceso a las ocho especificaciones y resuelve si existe la
+// correspondiente a un producto según su tipo de componente.
 
 
 @Component

@@ -16,11 +16,9 @@ public class SecurityUtils {
         this.usuarioRepository = usuarioRepository;
     }
 
-    /**
-     * Usuario de la peticion en curso, o null si no hay sesion.
-     * El contexto puede venir sin Authentication (peticiones publicas) y el
-     * nombre puede ser "anonymousUser", caso en que tampoco hay usuario real.
-     */
+    // Usuario de la petición en curso, o null si no hay sesión.
+    // El contexto puede venir sin Authentication (peticiones públicas) y el
+    // nombre puede ser "anonymousUser", caso en que tampoco hay usuario real.
     public Usuario getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {

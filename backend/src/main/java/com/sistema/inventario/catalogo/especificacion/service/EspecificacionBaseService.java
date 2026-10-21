@@ -12,9 +12,7 @@ public abstract class EspecificacionBaseService<E, D> {
         this.productoDao = productoDao;
     }
 
-    /**
-     * Valida que el producto exista y sea del tipo esperado.
-     */
+    // Valida que el producto exista y sea del tipo esperado.
     protected Producto validarProducto(Long productoId, TipoComponente esperado) {
         Producto producto = productoDao.findById(productoId)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));

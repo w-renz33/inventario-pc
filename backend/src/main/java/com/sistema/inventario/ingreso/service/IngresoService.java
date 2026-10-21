@@ -27,7 +27,7 @@ import com.sistema.inventario.common.EstadoIngreso;
 @Service
 public class IngresoService {
 
-    /** Tasa de IGV aplicada al total. El frontend usa la misma constante. */
+    // Tasa de IGV aplicada al total (18%). El frontend usa el mismo valor.
     private static final BigDecimal TASA_IGV = new BigDecimal("0.18");
 
     private final IngresoDao ingresoDao;
@@ -101,7 +101,7 @@ public class IngresoService {
             ingreso.getDetalles().add(detalle);
             subtotal = subtotal.add(detalle.getSubtotal());
 
-            // ENTRADA de stock + trazabilidad
+            // Actualiza el stock y prepara el movimiento de entrada.
             int anterior = producto.getStock() == null ? 0 : producto.getStock();
             producto.setStock(anterior + d.getCantidad());
             productoDao.save(producto);
@@ -115,7 +115,7 @@ public class IngresoService {
             mov.setStockNuevo(producto.getStock());
             mov.setCostoUnitario(d.getPrecioUnitario());
             mov.setReferenciaTipo(ReferenciaTipo.INGRESO);
-            // referenciaId se completa tras guardar el ingreso
+            // referenciaId se completa después de guardar el ingreso.
             mov.setUsuario(securityUtils.getCurrentUser());
             mov.setObservacion("Ingreso " + dto.getTipoDocumento() + " " + dto.getNumeroDocumento());
             movimientosDelIngreso.add(mov);
@@ -126,12 +126,8 @@ public class IngresoService {
         ingreso.setTotal(subtotal.add(ingreso.getIgv()));
         ingreso = ingresoDao.save(ingreso);
 
-            // El movimiento se guardo antes que el ingreso porque necesitaba un id
-            // que todavia no existia. Ahora se enlaza usando la referencia directa a
-        // cada entidad: antes se re-consultaba el kardex del producto y se
-        // tomaba el primer movimiento sin referencia, lo que era una consulta
-        // por linea de detalle y podia enlazar al movimiento equivocado si el
-        // mismo producto aparecia mas de una vez.
+        // El ingreso se guarda primero para obtener su id; después se persisten
+        // los movimientos y se enlazan con esa referencia.
         for (MovimientoStock mov : movimientosDelIngreso) {
             mov.setReferenciaId(ingreso.getId());
             movimientoStockDao.save(mov);
@@ -147,7 +143,7 @@ public class IngresoService {
         if (EstadoIngreso.ANULADO.equals(ingreso.getEstado())) {
             return;
         }
-        // guarda previa al CHECK: la reversa no puede dejar stock negativo
+        // Evita que la reversión deje stock negativo (restricción CHECK).
         for (IngresoDetalle detalle : ingreso.getDetalles()) {
             int stockActual = detalle.getProducto().getStock() == null ? 0 : detalle.getProducto().getStock();
             if (stockActual < detalle.getCantidad()) {
@@ -156,7 +152,7 @@ public class IngresoService {
                         + ", a reversar " + detalle.getCantidad() + ")");
             }
         }
-        // reversa simple: resta stock y registra SALIDA por devolucion
+        // Revierte el stock y registra la salida por devolución.
         for (IngresoDetalle detalle : ingreso.getDetalles()) {
             Producto producto = detalle.getProducto();
             int anterior = producto.getStock();

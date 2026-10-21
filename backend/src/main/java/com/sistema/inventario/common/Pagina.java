@@ -2,13 +2,8 @@ package com.sistema.inventario.common;
 
 import java.util.List;
 
-/**
- * Respuesta paginada simple y reutilizable (productos, ingresos, movimientos...).
- * El paginado se resuelve manual en cada DAO con setFirstResult/setMaxResults,
- * sin la magia de Pageable de Spring Data.
- * Las banderas (first, last, hasNext, hasPrevious) vienen ya calculadas para
- * que el frontend no haga aritmetica: disabled={!pagina.hasNext}.
- */
+// Respuesta paginada reutilizable para los listados.
+// Incluye las banderas first, last, hasNext y hasPrevious ya calculadas.
 public record Pagina<T>(
         List<T> content,
         int page,

@@ -1,5 +1,15 @@
 interface IconProps {
-  readonly nombre: 'dashboard' | 'productos' | 'ingresos' | 'kardex' | 'proveedores' | 'salir';
+  readonly nombre:
+    | 'dashboard'
+    | 'productos'
+    | 'ingresos'
+    | 'kardex'
+    | 'proveedores'
+    | 'salir'
+    | 'check'
+    | 'info'
+    | 'alerta'
+    | 'cerrar';
   readonly className?: string;
 }
 
@@ -55,6 +65,32 @@ export function Icon({ nombre, className = 'h-5 w-5' }: IconProps) {
       return (
         <svg viewBox="0 0 24 24" className={className} {...comun} aria-hidden="true">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+        </svg>
+      );
+    case 'check':
+      return (
+        <svg viewBox="0 0 24 24" className={className} {...comun} aria-hidden="true">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      );
+    case 'info':
+      return (
+        <svg viewBox="0 0 24 24" className={className} {...comun} aria-hidden="true">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 11v5M12 8h.01" />
+        </svg>
+      );
+    case 'alerta':
+      return (
+        <svg viewBox="0 0 24 24" className={className} {...comun} aria-hidden="true">
+          <path d="M12 3 2.5 20h19L12 3Z" />
+          <path d="M12 9v5M12 17h.01" />
+        </svg>
+      );
+    case 'cerrar':
+      return (
+        <svg viewBox="0 0 24 24" className={className} {...comun} aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
         </svg>
       );
   }

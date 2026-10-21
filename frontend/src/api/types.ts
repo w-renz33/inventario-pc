@@ -30,6 +30,7 @@ export type TipoMovimiento = 'ENTRADA' | 'SALIDA' | 'AJUSTE';
 
 export interface LoginResponse {
   username: string;
+  nombreCompleto: string | null;
   roles: string[];
   permisos: string[];
 }

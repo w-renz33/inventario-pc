@@ -10,6 +10,7 @@ import { AccionBtn } from '../components/AccionBtn';
 import { Modal } from '../components/Modal';
 import { Input } from '../components/Fields';
 import { ErrorState } from '../components/States';
+import { useToast } from '../components/Toast';
 import { useClientPagination } from '../hooks/useClientPagination';
 import * as api from '../api/proveedores';
 import { listarProveedores } from '../api/catalogos';
@@ -30,6 +31,7 @@ type Dialogo =
 /** Pantalla fuera del set Stitch (el diseño no la trae): mismo sistema
  *  visual, CRUD completo de /api/proveedores. */
 export function ProveedoresPage() {
+  const { exito } = useToast();
   const [items, setItems] = useState<Proveedor[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,11 +81,14 @@ export function ProveedoresPage() {
   const guardar = async (dto: Proveedor) => {
     setGuardando(true);
     setErrorForm(null);
+    const editando = dialogo.tipo === 'form' ? dialogo.proveedor : undefined;
     try {
-      if (dialogo.tipo === 'form' && dialogo.proveedor?.id !== undefined) {
-        await api.actualizarProveedor(dialogo.proveedor.id, dto);
+      if (editando?.id !== undefined) {
+        const guardado = await api.actualizarProveedor(editando.id, dto);
+        exito(`Proveedor «${guardado.nombre}» actualizado correctamente.`);
       } else {
-        await api.crearProveedor(dto);
+        const guardado = await api.crearProveedor(dto);
+        exito(`Proveedor «${guardado.nombre}» creado correctamente.`);
       }
       setDialogo({ tipo: 'ninguno' });
       await cargar();
@@ -95,10 +100,13 @@ export function ProveedoresPage() {
   };
 
   const confirmarEliminar = async () => {
-    if (dialogo.tipo !== 'eliminar' || dialogo.proveedor.id === undefined) return;
+    if (dialogo.tipo !== 'eliminar') return;
+    const proveedor = dialogo.proveedor;
+    if (proveedor.id === undefined) return;
     setGuardando(true);
     try {
-      await api.eliminarProveedor(dialogo.proveedor.id);
+      await api.eliminarProveedor(proveedor.id);
+      exito(`Proveedor «${proveedor.nombre}» eliminado.`);
       setDialogo({ tipo: 'ninguno' });
       await cargar();
     } catch (err) {

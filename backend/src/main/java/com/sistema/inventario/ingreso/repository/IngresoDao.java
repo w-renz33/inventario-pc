@@ -9,13 +9,9 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * DAO manual con EntityManager (Fase 3: menos magia).
- * Reemplaza a IngresoRepository: CRUD + la busqueda por documento unico
- * (uk_ingreso_doc) escritos en JPQL explicito.
- * Los detalles se persisten por cascada JPA (CascadeType.ALL en Ingreso),
- * igual que antes: la cascada es JPA, no magia de Spring Data.
- */
+// Acceso a ingresos con JPQL.
+// La búsqueda por documento único usa la restricción uk_ingreso_doc.
+// Los detalles se persisten por cascada JPA (CascadeType.ALL en Ingreso).
 @Repository
 public class IngresoDao {
 

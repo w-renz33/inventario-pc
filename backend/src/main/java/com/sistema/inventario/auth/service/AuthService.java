@@ -36,8 +36,8 @@ public class AuthService {
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
-        // Login programatico: hay que persistir el contexto en la sesion explicitamente
-        // (Spring Security 6 no lo guarda solo al autenticar fuera de un filtro).
+        // El login se autentica fuera de un filtro; hay que guardar el contexto
+        // explícitamente en la sesión (Spring Security 6 no lo hace automáticamente).
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);
         SecurityContextHolder.setContext(context);
@@ -62,6 +62,6 @@ public class AuthService {
                 .distinct()
                 .toList();
 
-        return new LoginResponse(usuario.getUsername(), roles, permisos);
+        return new LoginResponse(usuario.getUsername(), usuario.getNombreCompleto(), roles, permisos);
     }
 }

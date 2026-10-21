@@ -7,11 +7,8 @@ import java.math.BigDecimal;
 import com.sistema.inventario.common.EstadoProducto;
 import com.sistema.inventario.common.TipoComponente;
 
-/**
- * Actualizacion parcial (PATCH): todos los campos son opcionales y solo se
- * aplican los que llegan. Por eso no lleva anotaciones de validacion de campo
- * (un null significa "no tocar"); la validacion vive en ProductoService.
- */
+// Actualización parcial: solo se aplican los campos enviados.
+// Un null significa "no modificar"; por eso la validación se hace en ProductoService.
 @Data
 public class ProductoUpdateDTO {
 

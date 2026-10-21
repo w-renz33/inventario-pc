@@ -8,13 +8,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/**
-     DAO manual con EntityManager .
-     Reemplaza a ProductoRepository. Solo se portan los metodos con uso real
-     (findAll, findById, save, deleteById); los finders decorativos sin uso
-     (Containing, ByCategoria, StockLessThanEqual) no se replican para no
-     crear codigo muerto.
- */
+// Acceso a productos con EntityManager.
+// Incluye las operaciones usadas por el servicio y la búsqueda por nombre o SKU.
 @Repository
 public class ProductoDao {
 
@@ -54,10 +49,8 @@ public class ProductoDao {
         return query.getResultList();
     }
 
-    /**
-          Busqueda puntual por nombre o SKU. El SKU exacto se ordena primero para
-          que una consulta por codigo completo devuelva ese producto en la fila 1.
-     */
+    // Busca por nombre o SKU. El SKU exacto se ordena primero para que una
+    // consulta por código completo devuelva ese producto en la primera fila.
     public List<Producto> buscarPorNombreOSku(String texto, int limit) {
         String patron = patronLike(texto);
         return em.createQuery(

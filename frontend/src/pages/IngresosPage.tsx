@@ -10,6 +10,7 @@ import { AccionBtn } from '../components/AccionBtn';
 import { Modal } from '../components/Modal';
 import { Input, Select } from '../components/Fields';
 import { ErrorState } from '../components/States';
+import { useToast } from '../components/Toast';
 import { useAuth } from '../auth/AuthContext';
 import { useClientPagination } from '../hooks/useClientPagination';
 import { listarProveedores } from '../api/catalogos';
@@ -32,6 +33,7 @@ const FILA_VACIA: FilaDetalle = { productoId: '', cantidad: '1', precioUnitario:
  *  devuelve List: filtrar lo cargado es honesto, nada queda muerto). */
 export function IngresosPage() {
   const { tienePermiso } = useAuth();
+  const { exito } = useToast();
   const puedeRegistrar = tienePermiso('ingreso.registrar');
 
   const [ingresos, setIngresos] = useState<Ingreso[]>([]);
@@ -121,11 +123,12 @@ export function IngresosPage() {
     setGuardando(true);
     setErrorForm(null);
     try {
-      await api.registrarIngreso({
+      const ingreso = await api.registrarIngreso({
         tipoDocumento, numeroDocumento: numeroDocumento.trim(), fecha,
         proveedorId: Number(proveedorId), observacion: observacion.trim() || undefined,
         detalles,
       });
+      exito(`Ingreso ${ingreso.numeroDocumento || numeroDocumento.trim()} registrado. Stock actualizado.`);
       setFormAbierto(false);
       limpiarForm();
       await cargar();
@@ -148,10 +151,12 @@ export function IngresosPage() {
 
   const confirmarAnular = async () => {
     if (anularId === null) return;
+    const numero = ingresos.find((i) => i.id === anularId)?.numeroDocumento ?? `#${anularId}`;
     setGuardando(true);
     setErrorForm(null);
     try {
       await api.anularIngreso(anularId);
+      exito(`Ingreso ${numero} anulado. Stock revertido.`);
       setAnularId(null);
       await cargar();
     } catch (err) {

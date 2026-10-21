@@ -60,6 +60,20 @@ export default {
         xl: '0.5rem',
         full: '0.75rem',
       },
+      keyframes: {
+        'toast-in': {
+          '0%': { opacity: '0', transform: 'translateY(-8px) scale(0.98)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        'toast-out': {
+          '0%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+          '100%': { opacity: '0', transform: 'translateY(-8px) scale(0.98)' },
+        },
+      },
+      animation: {
+        'toast-in': 'toast-in 180ms ease-out',
+        'toast-out': 'toast-out 160ms ease-in forwards',
+      },
       spacing: {
         'space-xs': '0.25rem',
         'space-sm': '0.375rem',

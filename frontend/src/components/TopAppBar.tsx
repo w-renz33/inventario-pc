@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { mensajeError } from '../api/client';
 import { Icon } from './Icon';
+import { useToast } from './Toast';
 import { useState } from 'react';
 
 interface TopAppBarProps {
@@ -12,12 +13,14 @@ interface TopAppBarProps {
 /** Barra superior: titulo, chip de usuario+rol y Salir. */
 export function TopAppBar({ titulo, subtitulo }: TopAppBarProps) {
   const { user, salir } = useAuth();
+  const { info } = useToast();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
   const onSalir = async () => {
     try {
       await salir();
+      info('Sesión cerrada.');
       navigate('/login');
     } catch (err) {
       setError(mensajeError(err, 'No se pudo cerrar sesion.'));
@@ -34,7 +37,7 @@ export function TopAppBar({ titulo, subtitulo }: TopAppBarProps) {
         {error && <span className="text-body-sm text-error">{error}</span>}
         {user && (
           <span className="rounded bg-secondary-fixed px-space-sm py-space-xs text-label-sm text-on-secondary-fixed">
-            {user.username} · {(user.roles[0] ?? '—').toUpperCase()}
+            {user.nombreCompleto?.trim() || user.username} · {(user.roles[0] ?? '—').toUpperCase()}
           </span>
         )}
         <button

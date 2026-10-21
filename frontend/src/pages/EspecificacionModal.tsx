@@ -10,6 +10,7 @@ import { Modal } from '../components/Modal';
 import { Button } from '../components/Button';
 import { EspecificacionDetalle } from '../components/EspecificacionDetalle';
 import { EspecificacionForm } from '../components/EspecificacionForm';
+import { useToast } from '../components/Toast';
 import { mensajeError } from '../api/client';
 
 interface EspecificacionModalProps {
@@ -25,6 +26,7 @@ type Modo = 'cargando' | 'ver' | 'editar';
  *  - Boton "Editar" -> modo 'editar' con datos precargados.
  *  - Guardar -> POST si no existia, PUT si existia. */
 export function EspecificacionModal({ producto, onCerrar, onGuardado }: EspecificacionModalProps) {
+  const { exito } = useToast();
   const tipo = producto.tipoComponente as TipoEspecificacion | null;
   const [modo, setModo] = useState<Modo>('cargando');
   const [spec, setSpec] = useState<Record<string, unknown> | null>(null);
@@ -68,6 +70,11 @@ export function EspecificacionModal({ producto, onCerrar, onGuardado }: Especifi
       } else {
         await crearEspecificacion(producto.id, tipo, payload);
       }
+      exito(
+        existia
+          ? `Especificación de «${producto.nombre}» actualizada.`
+          : `Especificación de «${producto.nombre}» registrada.`,
+      );
       onGuardado();
     } catch (err) {
       setError(mensajeError(err, 'No se pudo guardar la especificacion.'));

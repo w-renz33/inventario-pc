@@ -8,13 +8,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * DAO manual con EntityManager (Fase 3: menos magia).
- * Reemplaza a ProductoRepository. Solo se portan los metodos con uso real
- * (findAll, findById, save, deleteById); los finders decorativos sin uso
- * (Containing, ByCategoria, StockLessThanEqual) no se replican para no
- * crear codigo muerto.
- */
+// Acceso a productos con EntityManager.
+// Incluye las operaciones usadas por el servicio y la búsqueda por nombre o SKU.
 @Repository
 public class ProductoDao {
 
@@ -52,6 +47,30 @@ public class ProductoDao {
             query.setParameter("categoriaId", categoriaId);
         }
         return query.getResultList();
+    }
+
+    // Busca por nombre o SKU. El SKU exacto se ordena primero para que una
+    // consulta por código completo devuelva ese producto en la primera fila.
+    public List<Producto> buscarPorNombreOSku(String texto, int limit) {
+        String patron = patronLike(texto);
+        return em.createQuery(
+                        "SELECT p FROM Producto p"
+                                + " WHERE LOWER(p.nombre) LIKE :patron ESCAPE '!'"
+                                + " OR LOWER(p.sku) LIKE :patron ESCAPE '!'"
+                                + " ORDER BY CASE WHEN LOWER(p.sku) = :exacto THEN 0 ELSE 1 END, p.nombre",
+                        Producto.class)
+                .setParameter("patron", patron)
+                .setParameter("exacto", texto)
+                .setMaxResults(limit)
+                .getResultList();
+    }
+
+    private String patronLike(String texto) {
+        String escapado = texto
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
+        return "%" + escapado + "%";
     }
 
     public long count(Long categoriaId) {

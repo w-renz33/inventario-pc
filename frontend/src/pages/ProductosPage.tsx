@@ -12,6 +12,7 @@ import { ETIQUETAS_TIPO } from '../api/especificaciones';
 import type { TipoEspecificacion } from '../api/types';
 import { Modal } from '../components/Modal';
 import { ErrorState } from '../components/States';
+import { useToast } from '../components/Toast';
 import { useServerPagination } from '../hooks/useServerPagination';
 import { listarCategorias, crearCategoria as crearCategoriaApi } from '../api/catalogos';
 import { Input } from '../components/Fields';
@@ -22,6 +23,7 @@ import type { Categoria, Producto } from '../api/types';
 import { ProductoFormModal, formError } from './ProductoFormModal';
 import { AjusteStockModal } from './AjusteStockModal';
 import { EspecificacionModal } from './EspecificacionModal';
+import { BuscarProductoModal } from './BuscarProductoModal';
 
 type Dialogo =
   | { tipo: 'ninguno' }
@@ -29,10 +31,12 @@ type Dialogo =
   | { tipo: 'ajuste'; producto: Producto }
   | { tipo: 'eliminar'; producto: Producto }
   | { tipo: 'ver'; id: number }
+  | { tipo: 'buscar' }
   | { tipo: 'categoria' };
 
 export function ProductosPage() {
   const { tienePermiso } = useAuth();
+  const { exito } = useToast();
   const puedeCrear = tienePermiso('producto.crear');
   const puedeAjustar = tienePermiso('stock.ajustar');
   const puedeBajar = tienePermiso('stock.ajustar') || tienePermiso('categoria.gestionar');
@@ -70,11 +74,14 @@ export function ProductosPage() {
   const guardarForm = async (dto: Parameters<typeof api.crearProducto>[0] | Parameters<typeof api.actualizarProducto>[1]) => {
     setGuardando(true);
     setErrorForm(null);
+    const editando = dialogo.tipo === 'form' ? dialogo.producto : undefined;
     try {
-      if (dialogo.tipo === 'form' && dialogo.producto) {
-        await api.actualizarProducto(dialogo.producto.id, dto);
+      if (editando) {
+        const guardado = await api.actualizarProducto(editando.id, dto);
+        exito(`Producto «${guardado.nombre}» actualizado correctamente.`);
       } else {
-        await api.crearProducto(dto as Parameters<typeof api.crearProducto>[0]);
+        const guardado = await api.crearProducto(dto as Parameters<typeof api.crearProducto>[0]);
+        exito(`Producto «${guardado.nombre}» creado correctamente.`);
       }
       cerrar();
       await pag.recargar();
@@ -90,7 +97,8 @@ export function ProductosPage() {
     setGuardando(true);
     setErrorForm(null);
     try {
-      await api.ajustarStock(dialogo.producto.id, cantidad, motivo);
+      const actualizado = await api.ajustarStock(dialogo.producto.id, cantidad, motivo);
+      exito(`Stock de «${actualizado.nombre}» ajustado a ${actualizado.stock} unidades.`);
       cerrar();
       await pag.recargar();
     } catch (err) {
@@ -100,11 +108,14 @@ export function ProductosPage() {
     }
   };
 
-  const confirmarEliminar = async () => {    if (dialogo.tipo !== 'eliminar') return;
+  const confirmarEliminar = async () => {
+    if (dialogo.tipo !== 'eliminar') return;
+    const producto = dialogo.producto;
     setGuardando(true);
     setErrorAccion(null);
     try {
-      await api.darDeBajaProducto(dialogo.producto.id);
+      await api.darDeBajaProducto(producto.id);
+      exito(`Producto «${producto.nombre}» dado de baja (DESCONTINUADO).`);
       cerrar();
       await pag.recargar();
     } catch (err) {
@@ -130,7 +141,8 @@ export function ProductosPage() {
     setGuardando(true);
     setErrorForm(null);
     try {
-      await crearCategoriaApi(catNombre.trim(), catDesc.trim() || undefined);
+      const creada = await crearCategoriaApi(catNombre.trim(), catDesc.trim() || undefined);
+      exito(`Categoría «${creada.nombre}» creada correctamente.`);
       setCatNombre('');
       setCatDesc('');
       setDialogo({ tipo: 'ninguno' });
@@ -208,6 +220,7 @@ export function ProductosPage() {
               </select>
             </label>
             <Button variante="secondary" onClick={() => pag.cambiarCategoria(undefined)}>Limpiar</Button>
+            <Button variante="secondary" onClick={() => setDialogo({ tipo: 'buscar' })}>Buscar producto</Button>
             {puedeCrearCategoria && (
               <Button variante="secondary" onClick={() => { setCatNombre(''); setCatDesc(''); setErrorForm(null); setDialogo({ tipo: 'categoria' }); }}>+ Categoría</Button>
             )}
@@ -355,6 +368,10 @@ export function ProductosPage() {
             <Input id="cat-desc" etiqueta="Descripcion" value={catDesc} onChange={(e) => setCatDesc(e.target.value)} />
           </div>
         </Modal>
+      )}
+
+      {dialogo.tipo === 'buscar' && (
+        <BuscarProductoModal onCerrar={cerrar} />
       )}
 
       {dialogo.tipo === 'eliminar' && (

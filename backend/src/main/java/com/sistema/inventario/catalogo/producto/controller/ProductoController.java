@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/inventario")
 public class ProductoController {
@@ -22,13 +24,10 @@ public class ProductoController {
         this.productoService = productoService;
     }
 
-    /**
-     * Listado paginado con filtro opcional por categoria.
-     * Ejemplo: GET /api/inventario/productos?page=0&size=10&categoriaId=1
-     * Respuesta: { content:[...], page:0, size:10, totalElements:25, totalPages:3,
-     *              first:true, last:false, hasNext:true, hasPrevious:false }
-     * categoriaId ausente o vacio = todas las categorias.
-     */
+    // Listado paginado con filtro opcional por categoría.
+    // Ejemplo: GET /api/inventario/productos?page=0&size=10&categoriaId=1
+    // Respuesta: content, page, size, totalElements, totalPages y banderas.
+    // categoriaId ausente o vacío significa todas las categorías.
     @GetMapping("/productos")
     public ResponseEntity<Pagina<ProductoDTO>> getAll(
             @RequestParam(defaultValue = "0") int page,
@@ -37,6 +36,16 @@ public class ProductoController {
 
         return ResponseEntity.ok(productoService.findPaged(
                 page, size, Paginacion.parsearCategoriaId(categoriaId)));
+    }
+
+    // Búsqueda puntual para selectores y consultas rápidas.
+    // Es un contrato independiente del listado paginado, con su propio límite.
+    @GetMapping("/productos/buscar")
+    public ResponseEntity<List<ProductoDTO>> buscar(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "10") int limit) {
+
+        return ResponseEntity.ok(productoService.buscar(q, limit));
     }
 
     @GetMapping("/productos/{id}")
@@ -59,11 +68,9 @@ public class ProductoController {
         return ResponseEntity.ok(productoService.update(id, producto));
     }
 
-    /**
-     * Baja logica: el producto pasa a DESCONTINUADO en vez de desaparecer de la
-     * tabla. Es lo que permite conservar su historial de kardex, porque
-     * movimientos_stock e ingreso_detalle lo referencian con FK restrictiva.
-     */
+    // Baja lógica: el producto pasa a DESCONTINUADO sin borrarse de la tabla.
+    // Así se conserva su kardex, porque movimientos_stock e ingreso_detalle
+    // lo referencian con FK restrictiva.
     @DeleteMapping("/productos/{id}")
     @PreAuthorize("hasAnyAuthority('stock.ajustar', 'categoria.gestionar')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

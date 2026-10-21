@@ -10,11 +10,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * DAO manual de lectura para autenticacion (Fase 2: menos magia).
- * El login resuelve Usuario -> Roles -> Permisos en 2 queries con JOIN FETCH,
- * en vez de 1 + N queries encadenadas por repositorios derivados.
- */
+// Consultas de lectura para autenticación.
+// Resuelve usuario, roles y permisos con JOIN FETCH para evitar N+1.
 @Repository
 public class AuthDao {
 

@@ -20,26 +20,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * Seeder academico: permisos, roles y usuarios base.
- *
- * <p>Es idempotente: se puede ejecutar en cada arranque sin duplicar nada y
- * sin perder datos ya sembrados. Solo crea lo que falta y migra el rol
- * viejo INVENTARIO al esquema de tres roles.
- *
- * <p>Las categorias NO se siembran aqui a proposito: las gestiona el usuario
- * desde la pantalla de productos ({@code /api/categorias}) y en la base ya
- * existen las del catalogo de componentes mas MONITOR y MOUSE.
- */
+// Crea los permisos, roles y usuarios base del sistema.
+// Es idempotente: en cada arranque solo agrega lo que falta. Si existe el rol
+// INVENTARIO, reasigna sus usuarios al rol AUXILIAR_ALMACEN y lo elimina.
+// Las categorías se gestionan desde /api/categorias y no se siembran aquí.
 @Configuration
 public class DataSeeder {
 
     private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
 
-    /** Rol anterior al esquema de tres roles. Se migra y luego se elimina. */
+    // Rol anterior al esquema de tres roles; se migra y luego se elimina.
     private static final String ROL_LEGADO = "INVENTARIO";
 
-    /** Permisos del modelo, en el orden en que se muestran en el README. */
+    // Permisos base del sistema.
     private static final String[][] PERMISOS = {
             {"producto.crear", "Crear productos"},
             {"producto.ver", "Ver productos"},
@@ -49,7 +42,7 @@ public class DataSeeder {
             {"usuarios.ver", "Ver usuarios"},
     };
 
-    /** ADMIN: todo. JEFE: almacen completo sin ver usuarios. AUXILIAR: ver + ingresos. */
+    // ADMIN: acceso total. JEFE: almacén completo, sin usuarios. AUXILIAR: consulta e ingresos.
     private static final List<String> PERMISOS_ADMIN = List.of(
             "producto.crear", "producto.ver", "ingreso.registrar",
             "stock.ajustar", "categoria.gestionar", "usuarios.ver");
@@ -92,10 +85,9 @@ public class DataSeeder {
             crearUsuarioSiFalta(usuarioRepository, usuarioRolRepository, passwordEncoder,
                     "jefe", "jefe123", "Jefe de Almacen", "jefe@sistema.com", jefe);
 
-            // El usuario "inventario" es el auxiliar. En una base ya sembrada por la
-            // version anterior todavia apunta al rol INVENTARIO y hay que reasignarlo;
-            // en una base nueva no existe y se crea aqui. Sin esto, una instalacion
-            // limpia se quedaria sin el usuario auxiliar que anuncia el README.
+            // El usuario "inventario" es el auxiliar. Si ya existe con el rol
+            // INVENTARIO, se reasigna a AUXILIAR_ALMACEN; si no existe, se crea
+            // más abajo.
             migrarUsuario(usuarioRepository, usuarioRolRepository, rolRepository, "inventario", auxiliar);
             crearUsuarioSiFalta(usuarioRepository, usuarioRolRepository, passwordEncoder,
                     "inventario", "inv123", "Usuario Inventario", "inventario@sistema.com", auxiliar);
@@ -129,12 +121,9 @@ public class DataSeeder {
         }
     }
 
-    /**
-     * Reasigna el rol del usuario si todavia apunta al rol legado. Cualquier otro
-     * rol asignado se respeta: no se pisa la decision del administrador.
-     * Si el usuario no existe todavia (base nueva), no hace nada: lo crea el
-     * llamada siguiente a crearUsuarioSiFalta.
-     */
+    // Reasigna el rol del usuario si todavía apunta al rol legado. Cualquier otro
+    // rol asignado se respeta. Si el usuario no existe, no hace nada: lo crea la
+    // llamada siguiente a crearUsuarioSiFalta.
     private void migrarUsuario(UsuarioRepository usuarioRepository,
                                UsuarioRolRepository usuarioRolRepository,
                                RolRepository rolRepository,
@@ -159,16 +148,14 @@ public class DataSeeder {
         });
     }
 
-    /** El rol INVENTARIO del esquema anterior, o null si ya no existe. */
+    // Devuelve el rol INVENTARIO del esquema anterior, o null si ya no existe.
     private Rol rolLegado(RolRepository rolRepository) {
         return rolRepository.findByNombre(ROL_LEGADO).orElse(null);
     }
 
-    /**
-     * Elimina el rol INVENTARIO del esquema anterior. El orden importa: primero
-     * las filas hijas de rol_permiso y usuario_rol, porque ambas FK son
-     * restrictivas (NO ACTION) y un DELETE directo seria rechazado.
-     */
+    // Elimina el rol INVENTARIO y sus filas hijas en rol_permiso y usuario_rol.
+    // El orden importa: ambas FK son restrictivas (NO ACTION) y un DELETE
+    // directo sería rechazado.
     private void eliminarRolLegado(RolRepository rolRepository,
                                    RolPermisoRepository rolPermisoRepository,
                                    UsuarioRolRepository usuarioRolRepository) {

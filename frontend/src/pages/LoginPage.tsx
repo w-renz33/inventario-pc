@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { useToast } from '../components/Toast';
 import { mensajeError } from '../api/client';
 import { Button } from '../components/Button';
 import { Input } from '../components/Fields';
@@ -15,6 +16,7 @@ interface LoginPageProps {
  *  (no hay endpoint de recovery). */
 export function LoginPage({ appNombre = 'CiberTecnologias SAC' }: LoginPageProps) {
   const { user, entrar } = useAuth();
+  const { exito } = useToast();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [username, setUsername] = useState('');
@@ -31,7 +33,8 @@ export function LoginPage({ appNombre = 'CiberTecnologias SAC' }: LoginPageProps
     setError(null);
     setCargando(true);
     try {
-      await entrar(username.trim(), password);
+      const usuario = await entrar(username.trim(), password);
+      exito(`Bienvenido, ${usuario.nombreCompleto?.trim() || usuario.username}.`);
       navigate('/dashboard');
     } catch (err) {
       setError(mensajeError(err, 'Credenciales incorrectas o sesion expirada.'));

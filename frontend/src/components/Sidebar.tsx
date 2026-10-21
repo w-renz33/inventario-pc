@@ -21,7 +21,7 @@ export function Sidebar({ appNombre = 'CiberTecnologias SAC' }: SidebarProps) {
     <aside className="flex w-60 shrink-0 flex-col bg-tertiary text-on-tertiary dark:bg-inverse-surface dark:text-inverse-on-surface">
       <Link to="/" className="px-space-lg pb-space-md pt-space-lg">
         <p className="text-headline-sm font-semibold">{appNombre}</p>
-        <p className="text-label-sm uppercase tracking-wider opacity-70">Académico</p>
+       
       </Link>
       <nav className="flex flex-col gap-space-xs px-space-md">
         <p className="px-space-sm text-label-sm uppercase tracking-wider opacity-60">Inventario</p>
@@ -46,8 +46,8 @@ export function Sidebar({ appNombre = 'CiberTecnologias SAC' }: SidebarProps) {
         })}
       </nav>
       <div className="mt-auto border-t border-on-tertiary/10 px-space-lg py-space-md">
-        <p className="text-body-sm opacity-70">Campus Central ERP</p>
-        <p className="text-body-sm opacity-50">v2.4.1-stable</p>
+        <p className="text-body-sm opacity-70">CiberTegnologias ERP</p>
+        <p className="text-body-sm opacity-50">v1.3.2</p>
       </div>
     </aside>
   );

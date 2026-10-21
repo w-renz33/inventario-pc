@@ -8,11 +8,8 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * DAO manual con EntityManager (Fase 1: menos magia).
- * Reemplaza a MovimientoStockRepository: cada query es JPQL explicito.
- * El JOIN FETCH evita el N+1 al leer producto/usuario en el DTO.
- */
+// Acceso a movimientos de stock con JPQL.
+// Las lecturas cargan producto y usuario con JOIN FETCH para evitar N+1.
 @Repository
 public class MovimientoStockDao {
 

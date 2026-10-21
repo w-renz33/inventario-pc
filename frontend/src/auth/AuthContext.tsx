@@ -6,7 +6,7 @@ import type { LoginResponse } from '../api/types';
 interface AuthContextValue {
   user: LoginResponse | null;
   cargando: boolean;
-  entrar: (username: string, password: string) => Promise<void>;
+  entrar: (username: string, password: string) => Promise<LoginResponse>;
   salir: () => Promise<void>;
   tienePermiso: (permiso: string) => boolean;
 }
@@ -30,7 +30,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const entrar = useCallback(async (username: string, password: string) => {
-    setUser(await authApi.login(username, password));
+    const data = await authApi.login(username, password);
+    setUser(data);
+    return data;
   }, []);
 
   const salir = useCallback(async () => {

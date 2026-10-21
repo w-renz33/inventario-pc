@@ -7,15 +7,10 @@ import io.swagger.v3.oas.models.info.License;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * Documentacion de la API en /swagger-ui.html.
- *
- * <p>La autenticacion es por SESION de servidor (JSESSIONID HttpOnly), no por
- * token: por eso no se declara ningun esquema de seguridad en OpenAPI. El boton
- * "Authorize" de Swagger UI no aplica aqui. Para probar a mano en Postman se
- * envia POST /api/auth/login con las credenciales y Postman guarda la cookie
- * sola en las siguientes peticiones.
- */
+// Configuración de OpenAPI en /swagger-ui.html.
+// La autenticación es por sesión (JSESSIONID HttpOnly), no por token, así que
+// no se declara un esquema de seguridad. Para probar, iniciar sesión con
+// POST /api/auth/login y conservar la cookie de sesión.
 @Configuration
 public class OpenApiConfig {
 

@@ -3,11 +3,9 @@ package com.sistema.inventario.common;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-/**
- * Reglas de paginado en un solo lugar, con nombres explicitos.
- * Uso: cada findPaged hace sanear -> DAO (offset/limit) -> Pagina.of(...).
- * Intencionalmente manual (academico): nada de Pageable de Spring Data.
- */
+// Normaliza y valida los parámetros de paginación.
+// Cada listado sanea página y tamaño, consulta el DAO con offset/limit y
+// construye una Pagina.
 public final class Paginacion {
 
     public static final int PAGE_DEFAULT = 0;
@@ -25,11 +23,8 @@ public final class Paginacion {
         return Math.min(Math.max(size, SIZE_MIN), SIZE_MAX);
     }
 
-    /**
-     * categoriaId tolerante: null o vacio significa "todas las categorias".
-     * Un valor no numerico devuelve 400 con mensaje claro en vez del
-     * error criptico de conversion de Spring.
-     */
+    // categoriaId: null o vacío significa "todas las categorías".
+    // Un valor no numérico responde 400 con un mensaje claro.
     public static Long parsearCategoriaId(String categoriaId) {
         if (categoriaId == null || categoriaId.isBlank()) {
             return null;

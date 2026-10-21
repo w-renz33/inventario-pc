@@ -15,7 +15,7 @@ public class MovimientoStockDTO {
     private Long productoId;
     private String productoNombre;
     private TipoMovimiento tipoMovimiento;
-    /** Compat: tipo como texto (ENTRADA/SALIDA/AJUSTE). */
+    // Representación textual de tipoMovimiento; se conserva por compatibilidad.
     private String tipo;
     private MotivoMovimiento motivo;
     private Integer cantidad;
@@ -27,6 +27,6 @@ public class MovimientoStockDTO {
     private String usuarioUsername;
     private LocalDateTime fecha;
     private String observacion;
-    /** Compat con campo anterior. */
+    // Alias de observación; se conserva por compatibilidad con clientes existentes.
     private String nota;
 }

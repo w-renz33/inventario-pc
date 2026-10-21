@@ -15,12 +15,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Puente Variante C: Usuario -> UsuarioRol -> Rol -> RolPermiso -> Permiso
- * convierte roles en ROLE_X y permiso.codigo en authorities (recurso.accion).
- * Usa AuthDao (EntityManager, 2 queries con JOIN FETCH) en vez de 1 + N
- * queries encadenadas por repositorios derivados.
- */
+// Carga el usuario y construye sus authorities a partir de roles y permisos.
+// Los roles se exponen como ROLE_<nombre> y los permisos como su código
+// (recurso.accion). Usa dos consultas con JOIN FETCH para evitar N+1.
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 

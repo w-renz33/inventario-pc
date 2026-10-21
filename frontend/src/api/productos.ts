@@ -21,6 +21,15 @@ export async function listarProductosParaPicker(): Promise<Producto[]> {
   return pagina.content;
 }
 
+/** Busqueda puntual por nombre o SKU (endpoint aparte del listado paginado).
+ *  El back devuelve [] si nada coincide y 400 si el texto es muy corto. */
+export async function buscarProductos(q: string, limit = 10): Promise<Producto[]> {
+  const { data } = await api.get<Producto[]>('/api/inventario/productos/buscar', {
+    params: { q, limit },
+  });
+  return data;
+}
+
 export async function getProducto(id: number): Promise<Producto> {
   const { data } = await api.get<Producto>(`/api/inventario/productos/${id}`);
   return data;

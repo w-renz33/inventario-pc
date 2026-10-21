@@ -18,10 +18,13 @@ import com.sistema.inventario.catalogo.categoria.repository.CategoriaRepository;
 import com.sistema.inventario.movimiento.repository.MovimientoStockDao;
 import com.sistema.inventario.catalogo.producto.repository.ProductoDao;
 import com.sistema.inventario.security.SecurityUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -65,6 +68,22 @@ public class ProductoService {
         return converToDTO(producto);
     }
 
+    /**
+         Busqueda por nombre o SKU para el modal de consulta. El limite se acota
+         a 50 para que la respuesta siga siendo de picker y no un listado.
+     */
+    public List<ProductoDTO> buscar(String q, int limit) {
+        String texto = q == null ? "" : q.trim().toLowerCase(Locale.ROOT);
+        if (texto.length() < 2) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "El texto de busqueda debe tener al menos 2 caracteres");
+        }
+        int limite = Math.min(Math.max(limit, 1), 50);
+        return productoDao.buscarPorNombreOSku(texto, limite).stream()
+                .map(this::converToDTO)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public ProductResponseDTO save(ProductCreateDTO dto) {
         Producto producto = converCreateToEntity(dto);
@@ -84,8 +103,7 @@ public class ProductoService {
         }
 
         validarTipoComponente(producto);
-        // sku es NOT NULL + UNIQUE en la tabla: si el cliente no lo manda,
-        // se genera uno para que la alta no reviente con un 500.
+
         producto.setSku(resolverSku(dto.getSku(), producto));
         producto = productoDao.save(producto);
 
@@ -95,7 +113,6 @@ public class ProductoService {
                     MotivoMovimiento.INVENTARIO_INICIAL,
                     ReferenciaTipo.AJUSTE, null,
                     "Stock inicial al crear producto");
-
         }
 
         return convertToResponseDTO(producto);
@@ -173,12 +190,12 @@ public class ProductoService {
     }
 
     /**
-     * Baja logica: marca el producto como DESCONTINUADO en vez de borrarlo de la
-     * tabla. Es lo que permite conservar su kardex, porque movimientos_stock e
-     * ingreso_detalle lo referencian con FK restrictiva: un DELETE fisico fallaba
-     * en cuanto el producto tenia un solo movimiento o un ingreso asociado.
-     *
-     * <p>El stock restante sale como MERMA para que el kardex cuadre.
+        Baja logica: marca el producto como DESCONTINUADO en vez de borrarlo de la
+        tabla. Es lo que permite conservar su kardex, porque movimientos_stock e
+        ingreso_detalle lo referencian con FK restrictiva: un DELETE fisico fallaba
+        en cuanto el producto tenia un solo movimiento o un ingreso asociado.
+
+        El stock restante sale como MERMA para que el kardex cuadre.
      */
     @Transactional
     public void delete(Long id)  {
@@ -238,14 +255,14 @@ public class ProductoService {
     }
 
     /**
-     * Registra un movimiento de stock.
-     *
-     * <p>stockAnterior se calcula a partir del stock actual segun el tipo, salvo
-     * en AJUSTE, donde el valor real se recibe como parametro: antes se guardaba
-     * stockAnterior = stockNuevo, y el kardex mostraba "3 -> 3" en un ajuste que
-     * en realidad fue de 3 a 5.
-     *
-     * @param stockAnteriorKnown valor real previo al ajuste; ignorado si es null
+          Registra un movimiento de stock.
+
+          <p>stockAnterior se calcula a partir del stock actual segun el tipo, salvo
+          en AJUSTE, donde el valor real se recibe como parametro: antes se guardaba
+          stockAnterior = stockNuevo, y el kardex mostraba "3 -> 3" en un ajuste que
+          en realidad fue de 3 a 5.
+
+          @param stockAnteriorKnown valor real previo al ajuste; ignorado si es null
      */
     private void registrarMovimiento(Producto producto, int cantidad, TipoMovimiento tipo,
                                      Integer stockAnteriorKnown, MotivoMovimiento motivo,

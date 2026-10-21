@@ -22,6 +22,7 @@ import type { Categoria, Producto } from '../api/types';
 import { ProductoFormModal, formError } from './ProductoFormModal';
 import { AjusteStockModal } from './AjusteStockModal';
 import { EspecificacionModal } from './EspecificacionModal';
+import { BuscarProductoModal } from './BuscarProductoModal';
 
 type Dialogo =
   | { tipo: 'ninguno' }
@@ -29,6 +30,7 @@ type Dialogo =
   | { tipo: 'ajuste'; producto: Producto }
   | { tipo: 'eliminar'; producto: Producto }
   | { tipo: 'ver'; id: number }
+  | { tipo: 'buscar' }
   | { tipo: 'categoria' };
 
 export function ProductosPage() {
@@ -208,6 +210,7 @@ export function ProductosPage() {
               </select>
             </label>
             <Button variante="secondary" onClick={() => pag.cambiarCategoria(undefined)}>Limpiar</Button>
+            <Button variante="secondary" onClick={() => setDialogo({ tipo: 'buscar' })}>Buscar producto</Button>
             {puedeCrearCategoria && (
               <Button variante="secondary" onClick={() => { setCatNombre(''); setCatDesc(''); setErrorForm(null); setDialogo({ tipo: 'categoria' }); }}>+ Categoría</Button>
             )}
@@ -355,6 +358,10 @@ export function ProductosPage() {
             <Input id="cat-desc" etiqueta="Descripcion" value={catDesc} onChange={(e) => setCatDesc(e.target.value)} />
           </div>
         </Modal>
+      )}
+
+      {dialogo.tipo === 'buscar' && (
+        <BuscarProductoModal onCerrar={cerrar} />
       )}
 
       {dialogo.tipo === 'eliminar' && (
